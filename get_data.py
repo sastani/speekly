@@ -1,11 +1,10 @@
 
 import os
 import subprocess as sp
-import librosa
 from pytube import YouTube
-import numpy as np
-import pandas as pd
-from ntlk.tokenize import word_tokenize
+# import numpy as np
+# import pandas as pd
+# from ntlk.tokenize import word_tokenize
 
 def parse_time_str(s):
     """
@@ -40,7 +39,7 @@ def get_links(df):
         vid = yt.get(l)
         vid.download(dl_prefix)
         # how to?
-        df.loc['video' == ] = dl_prefix + # TODO vid.filename?
+        # df.loc['video' == ] = dl_prefix + # TODO vid.filename?
 
 
 def mp4_to_raw(mp4):
@@ -50,7 +49,7 @@ def mp4_to_raw(mp4):
     """
 
     # off by one?
-    outname = mp4[:-3] + '.raw'
+    outname = mp4[:-4] + '.raw'
 
     # wait for it to finish? default?
-    sp.Popen(['ffmpeg', '-i', mp4, '-f-', 's161e', '-acodec', 'pcm_s16le', outname])
+    sp.Popen(['ffmpeg', '-i', mp4, '-f', 's16le', '-acodec', 'pcm_s16le', outname])
