@@ -84,6 +84,8 @@ def traceback(dp_info, full_alignment=False):
     """
 
     D, T, text, snippet = dp_info
+    print(text)
+    print(snippet)
 
     i, j = T.shape
     i -= 1
@@ -92,8 +94,8 @@ def traceback(dp_info, full_alignment=False):
     alignment = ''
 
     while i > 0 and j > 0:
-        print(i, j)
-        if T[i,j] == 'm':
+        #print(i, j)
+        if T[i,j] == b'm':
             i -= 1
             j -= 1
             # doesn't matter which string you draw from if they match
@@ -106,17 +108,18 @@ def traceback(dp_info, full_alignment=False):
                 # should be the index in the text (therefore i)
                 return i
 
-        elif T[i,j] == 'r':
+        elif T[i,j] == b'r':
             i -= 1
             # does matter here. may be source of bugs.
             alignment += text[i]
 
-        elif T[i,j] == 'l':
+        elif T[i,j] == b'l':
             j -= 1
             # does matter here. may be source of bugs.
             alignment += '_'
 
         else:
+            print(T[i,j])
             print(D)
             print(T)
             assert False, 'all chars in T should be either m, r, or l'
@@ -126,7 +129,7 @@ def traceback(dp_info, full_alignment=False):
         if D[i,j] == 0:
             break
         '''
-    return alignment.reverse()
+    return alignment[::-1]
 
 
 class TextProgress(object):
@@ -142,18 +145,23 @@ class TextProgress(object):
         # could be a function of text length as well
         self.memory = 10
 
-    def align(snippet):
+    def align(self, snippet):
         return traceback(calc_dp(self.token_seq, snippet))
 
-    def update(new_text):
+    def update(self, new_text):
         """
         Aligns new_text to token_seq, weighted by our estimate before receiving any data.
         Can explicitly account for time passed, etc.
         """
 
+        # TODO change. simple filler implementation
+        self.marker += len(new_text)
+        # TODO signal new words correct or incorrect
+
+        '''
         # should get an index from update
         a = self.align(new_text)
-
         print(a)
+        '''
 
 

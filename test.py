@@ -14,8 +14,10 @@ class TestAlignment(unittest.TestCase):
     def test_alignment(self):
         text = self.samp_text
 
-        print(p.traceback(p.calc_dp(text, self.s1), full_alignment=True))
+        print(p.traceback(p.calc_dp(text, self.s1, verbose=True), full_alignment=True))
+        '''
         print(p.traceback(p.calc_dp(text, self.s2), full_alignment=True))
         print(p.traceback(p.calc_dp(text, self.s3), full_alignment=True))
         print(p.traceback(p.calc_dp(text, self.s4), full_alignment=True))
+        '''
 
