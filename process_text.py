@@ -1,7 +1,7 @@
 import io
 import os
-import pytube
 
+import get_data
 from google.cloud import speech
 
 def process_text(file):
@@ -16,17 +16,30 @@ def process_text(file):
     return words
 
 def to_sttapi(audio):
+
     speech_client = speech.Client()
+
     with io.open(audio, 'rb') as audio_file:
+
         audio_content = audio_file.read()
-        audio_sample = speech_client.sample(
-            audio_content,
-            source_uri=None,
-            encoding='LINEAR16',
-            sample_rate=16000)
+
+    audio_sample = speech_client.sample(
+        content=audio_content,
+        encoding='LINEAR16',
+        sample_rate=44100)
+
+    # sample = speech_client.sample(content=audio_content,
+    #     encoding=speech.Encoding.LINEAR16, 
+    #     sample_rate=44100)
+
+    print(audio_sample)
+
     recog_words = speech_client.speech_api.sync_recognize(audio_sample)
+
+    print(recog_words)
+
     for w in recog_words:
         print(w.transcript())
 
 
-to_sttapi("/Users/sinaastani/Documents/speekly/charlottes/CharlottesWeb0-5s.wav")
+to_sttapi("./test_recording.raw")
