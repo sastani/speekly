@@ -11,7 +11,7 @@ def score(word_a, word_b):
 
 
 # TODO numba this and traceback
-def calc_dp(text, snippet, indel=-12, verbose=False):
+def calc_dp(text, snippet, indel=0, verbose=False):
     """
     Calculates dynamic programming table and traceback information for snippet and text.
 
@@ -40,6 +40,8 @@ def calc_dp(text, snippet, indel=-12, verbose=False):
     for j in range(D.shape[1]):
         D[0,j] = j * indel
     '''
+    # TODO TODO is indel correctly applied? see test snip2
+    # affine gap?
 
     # TODO it seems top row of T is not set
     # all is set to 'r' as well
@@ -70,7 +72,6 @@ def calc_dp(text, snippet, indel=-12, verbose=False):
     return D, T, text, snippet
 
 
-# TODO ultimately want the last index of alignment out of this, i think
 def traceback(dp_info, full_alignment=False):
     """
     Returns index of last position in text scored as a match in the dynamic programming.
@@ -84,52 +85,86 @@ def traceback(dp_info, full_alignment=False):
     """
 
     D, T, text, snippet = dp_info
-    print(text)
-    print(snippet)
+    #print(text)
+    #print(snippet)
 
     i, j = T.shape
     i -= 1
     j -= 1
 
-    alignment = ''
+    # need to start from all maxima on bottom and right of dp table
+    max_score = max([np.max(D[:,-1]), np.max(D[-1,:])])
+    #print('max_score', max_score)
 
-    while i > 0 and j > 0:
-        #print(i, j)
-        if T[i,j] == b'm':
-            i -= 1
-            j -= 1
-            # doesn't matter which string you draw from if they match
-            alignment += text[i]
+    maxima = []
+    for i in range(D.shape[0]):
+        if D[i,D.shape[1]-1] == max_score:
+            maxima.append((i,D.shape[1]-1))
 
-            # if we only want last index of any character called as a match
-            # we can return early
-            # (use this after debugging whether whole alignment seems reasonable)
-            if not full_alignment:
-                # should be the index in the text (therefore i)
-                return i
+    for j in range(D.shape[1]):
+        if D[D.shape[0]-1,j] == max_score:
+            maxima.append((D.shape[0]-1,j))
 
-        elif T[i,j] == b'r':
-            i -= 1
-            # does matter here. may be source of bugs.
-            alignment += text[i]
+    #print('indices w/ max score on edge of dp table', maxima)
 
-        elif T[i,j] == b'l':
-            j -= 1
-            # does matter here. may be source of bugs.
-            alignment += '_'
+    alignments = []
+    end_indices = set()
 
-        else:
-            print(T[i,j])
-            print(D)
-            print(T)
-            assert False, 'all chars in T should be either m, r, or l'
+    #print(D)
+    #print(T)
 
-        # this would be if we wanted the index of the first matching character, not last
-        '''
-        if D[i,j] == 0:
-            break
-        '''
-    return alignment[::-1]
+    for m in maxima:
+        i, j = m
+        i -= 1
+        j -= 1
+
+        alignment = ''
+
+        while i >= 0 and j >= 0:
+            #print(i, j)
+            if T[i,j] == b'm':
+                alignment += snippet[j]
+
+                # if we only want last index of any character called as a match
+                # we can return early
+                # (use this after debugging whether whole alignment seems reasonable)
+                if not full_alignment:
+                    # should be the index in the text (therefore i)
+                    end_indices.add(i)
+                    break
+
+                i -= 1
+                j -= 1
+
+            elif T[i,j] == b'r':
+                # does matter here. may be source of bugs.
+                alignment += '_' #text[i]
+                i -= 1
+
+            elif T[i,j] == b'l':
+                # does matter here. may be source of bugs.
+                alignment += snippet[i] #'*'
+                j -= 1
+
+            else:
+                print(T[i,j])
+                print(D)
+                print(T)
+                assert False, 'all chars in T should be either m, r, or l'
+
+            # this would be if we wanted the index of the first matching character, not last
+            '''
+            if D[i,j] == 0:
+                break
+            '''
+
+        # TODO make set of indices as well
+        alignments.append(alignment[::-1])
+
+    if full_alignment:
+        return alignments
+    else:
+        return end_indices
 
 
 class TextProgress(object):
