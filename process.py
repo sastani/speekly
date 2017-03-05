@@ -68,7 +68,7 @@ def score(word_a, word_b, is_equivalent=lambda a, b: a == b):
         return 1
     else:
         # TODO any cases where i am assuming nonnegative cost / util
-        return -1
+        return 0
 
 
 # TODO numba this and traceback
@@ -98,6 +98,7 @@ def calc_dp(text, snippet, indel=0):
     for j in range(D.shape[1]):
         D[0,j] = j * indel
     '''
+
     # TODO TODO is indel correctly applied? see test snip2
     # affine gap?
 
@@ -129,7 +130,7 @@ def calc_dp(text, snippet, indel=0):
     return D, T, text, snippet
 
 
-def traceback(dp_info):
+def traceback(dp_info, progress_dict=None):
     """
     Returns set of indices of last position in text scored as best in the dynamic programming.
 
@@ -179,6 +180,8 @@ def traceback(dp_info):
         end_index = -1
         curr_alignment = []
 
+        seen_a_match = False
+
         # TODO need to parse these alignments into scores of words prior to marker
         while i >= 0 and j >= 0:
             if verbose:
@@ -186,11 +189,8 @@ def traceback(dp_info):
             #print('before ifs', i, j)
 
             if T[i,j] == b'm':
+                seen_a_match = True
                 curr_alignment += [snippet[j]]
-
-                if verbose:
-                    print('SNIPPET J IN M', snippet[j])
-                    print('text i', text[i])
 
                 # if we only want last index of any character called as a match
                 # we can return early
@@ -199,6 +199,13 @@ def traceback(dp_info):
                 # should be the index in the text (therefore i)
                 if end_index == -1:
                     end_index = i
+    
+                # TODO which it should (check) but for misspecified cost funcs it might not
+                if not progress_dict is None:
+                    if snippet[j] == text[i]:
+                        progress_dict[i] = True
+                    else:
+                        progress_dict[i] = False
 
                 i -= 1
                 j -= 1
@@ -208,6 +215,10 @@ def traceback(dp_info):
                 # does matter here. may be source of bugs.
                 if verbose:
                     print('CHARACTER ABSENT FROM TEXT (R)')
+
+                if not progress_dict is None:
+                    if seen_a_match:
+                        progress_dict[i] = False
 
                 curr_alignment += [None] #text[i]
                 i -= 1
@@ -273,12 +284,12 @@ class TextProgress(object):
         self.token_seq = self.standardize_block(text)
 
 
-    def align(self, snippet):
+    def align(self, snippet, progress_dict=None):
         """
         Returns a list of end indices of alignments and the best score.
         """
         
-        return traceback(calc_dp(self.token_seq, snippet))
+        return traceback(calc_dp(self.token_seq, snippet), progress_dict)
 
     
     def progress_dict(self):
@@ -289,6 +300,7 @@ class TextProgress(object):
         return d
 
 
+    """
     def update_scores(self, alignment, length_diff):
         '''
         start_index = align_end_index - len(alignment)
@@ -331,6 +343,7 @@ class TextProgress(object):
 
         for i, a in enumerate(correct):
             self.progress[i + length_diff] = a
+    """
 
 
     def update(self, interpretations):
@@ -373,15 +386,28 @@ class TextProgress(object):
 
         max_score = 0   # 0 is min possible score if no scores < 0
         best_alignment = None
+        best_interpretation = None
 
         # TODO may not work if score can go below zero. set to min possible otherwise.
-        for alignment, score in map(lambda x: self.align(x[0]), interpretations):
+        '''
+        for alignment, score in \
+                map(lambda x: self.align(x[0]),interpretations):
 
             # not dealing with ties for now
             if score >= max_score:
                 max_score = score
                 print(alignment)
                 best_alignment = alignment
+
+        '''
+        for (alignment, score), interpretation in \
+                zip(map(lambda x: self.align(x[0]),interpretations),interpretations):
+
+            # not dealing with ties for now
+            if score >= max_score:
+                max_score = score
+                best_alignment = alignment
+                best_interpretation = interpretation
 
         assert not best_alignment is None, 'best_alignment was not updated'
 
@@ -422,8 +448,15 @@ class TextProgress(object):
         print('alignment right before update_score', alignment)
         print(len(alignment))
         '''
+        '''
         len_diff = len(self.token_seq) - len(alignment)
         self.update_scores(alignment, len_diff)
+        '''
+
+        # not using the result. just setting progress_dict in traceback.
+        self.align(best_interpretation[0], self.progress)
+        self.add_missed_words()
+
 
         # update our estimate of where the reader is in the text
         if self.dynamic:
@@ -447,6 +480,13 @@ class TextProgress(object):
         # TODO signal new words correct or incorrect
 
         return self.progress_dict()
+
+
+    def add_missed_words(self):
+        m = max(self.progress.keys())
+        for i in range(m):
+            if not i in self.progress:
+                self.progress[i] = False
 
     
     def standardize_string(self, string):
