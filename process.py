@@ -207,7 +207,7 @@ class TextProgress(object):
     def progress_dict(self):
         d = dict()
         d['marker'] = self.marker
-        d['progress'] = [w, i, self.progress[i] for i, w in enumerate(self.token_seq)\
+        d['text'] = [i, self.progress[i] for i, w in enumerate(self.token_seq) \
                 if i in self.progress]
 
         return progress_dict
