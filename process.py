@@ -1,6 +1,7 @@
 
 import numpy as np
 from nltk.tokenize import word_tokenize
+import time
 
 
 def score(word_a, word_b):
@@ -74,7 +75,7 @@ def calc_dp(text, snippet, indel=0, verbose=False):
 
 def traceback(dp_info, full_alignment=False):
     """
-    Returns index of last position in text scored as a match in the dynamic programming.
+    Returns set of indices of last position in text scored as best in the dynamic programming.
 
     Args:
         dp_info (4-tuple of the following): 
@@ -162,9 +163,9 @@ def traceback(dp_info, full_alignment=False):
         alignments.append(alignment[::-1])
 
     if full_alignment:
-        return alignments
+        return alignments, max_score
     else:
-        return end_indices
+        return end_indices, max_score
 
 
 class TextProgress(object):
@@ -175,28 +176,90 @@ class TextProgress(object):
         self.token_seq = word_tokenize(text)
         self.position = 0
         self.correct = np.empty(len(text)) * np.nan
+        self.last_update = -1
+        self.last_marker = -1
+        self.estimate_rate = 0
+        self.min_score = 0
 
         # controls length of subsequence we try to align to text
         # could be a function of text length as well
-        self.memory = 10
+        #self.memory = 10
+
 
     def align(self, snippet):
+        """
+        Returns a list of end indices of alignments and the best score.
+        """
         return traceback(calc_dp(self.token_seq, snippet))
 
-    def update(self, new_text):
+
+    def update(self, interpretations):
         """
         Aligns new_text to token_seq, weighted by our estimate before receiving any data.
         Can explicitly account for time passed, etc.
+
+        Args:
+            interprations: list of tuples ((snippet, confidence), ...)
+                snippets should be strings of standardized text
+                confidences should be floats
         """
 
-        # TODO change. simple filler implementation
-        self.marker += len(new_text)
-        # TODO signal new words correct or incorrect
+        # TODO could use same dp on lists created from each word to calculate a similarity
+        # score for the word, which we could then threshold
 
+        if self.last_update == -1:
+            elapsed = 0
+        else:
+            elapsed = time.time() - self.last_update
+
+        #self.marker += len(new_text)
+
+        # TODO run alignments with each of few most confident responses
+        # penalize reader more for the string matching text best coming from a lower confidence
+
+        self.last_marker = marker
+
+        max_score = 0   # 0 is min possible score if no scores < 0
+        best_indices = {}
+
+        # TODO may not work if score can go below zero. set to min possible otherwise.
+        for index_set, score in map(self.align, interpretations):
+            # not dealing with ties for now
+            if score > max_score:
+                max_score = score
+                best_indices = index_set
+
+        # if there are multiple tied alignments, take the one closest to the current marker
+        # TODO would be better to use prediction rather than raw marker
+        if len(best_indices) > 1:
+            indices_copy = set(best_indices)
+
+            closest = indices_copy.pop()
+            min_dist = abs(closest - marker)
+
+            while len(indices_copy) > 0:
+                curr = indices_copy.pop()
+                distance = abs(curr - marker)
+                if distance < min_dist:
+                    min_dist = distance
+                    closest = curr
+
+        # update our estimate of where the reader is in the text
+        self.marker = round(self.align_weight * self.align(new_text) + \
+                (1 - self.align_weight) * self.marker + self.estimated_rate * elapsed)
+
+        # update estimated reading rate
+        # words per second (change in marker / sampling interval)
+        # not allowing the estimate to include them reading backwards
+        if elapsed != 0:
+            self.estimated_rate = max(0, self.last_marker - self.marker)
+
+        self.last_update = time.time()
+
+        # TODO signal new words correct or incorrect
         '''
         # should get an index from update
         a = self.align(new_text)
         print(a)
         '''
-
 
