@@ -106,7 +106,7 @@ async def websocket_handler(request):
             i += 1
 
             #  cutoff
-            if i == 3:
+            if i == 10:
                 audio = copy.deepcopy(accum1)
                 accum1 = b''
                 i = 0

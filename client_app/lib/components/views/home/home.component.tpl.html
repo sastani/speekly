@@ -5,12 +5,12 @@
 			<button class='btn btn-default' ng-click='$ctrl.startAudioStream()'>Start</button>
 		</div>
 		<div ng-if='!$ctrl.hasStarted'>
-			<p>{{$ctrl.text}}</p>
+			<div class='formgroup'>
+				<textarea ng-model='$ctrl.text' class='form-control'></textarea>
+			</div>
 		</div>
 		<div ng-if='$ctrl.hasStarted'>
 			<p class='display-txt'><span ng-class='$ctrl.getClass($index)' ng-repeat='text in $ctrl.textList'>{{text}}&nbsp;</span></p>
 		</div>
-
-		<p>{{$ctrl.progressDict}}{{$ctrl.marker}}</p>
 	</div>
 </div>
