@@ -36,6 +36,13 @@ def load_homophones(in_file='./homophones-clean.txt'):
     related_words[key_value[0]] = key_value[1]
     return related_words
 
+def process_block(block, homo_dict):
+    sequence = []
+    for s in block.split():
+        sequence = process_string(s, homo_dict)
+    
+    return sequence
+
 #######################################################################################
 # Alignment functions / backend state
 
@@ -58,6 +65,9 @@ def calc_dp(text, snippet, indel=0, verbose=False):
     """
     # TODO i want indel to not be applied at beginning of alignment, but at end
     # not sure if this accomplishes that... the problems dp solves are usually symmetric
+
+    print('text in dp', text)
+    print('snippet in dp', snippet)
 
     if verbose:
         print(text, snippet)
@@ -122,8 +132,8 @@ def traceback(dp_info):
     """
 
     D, T, text, snippet = dp_info
-    #print(text)
-    #print(snippet)
+    print('text', text)
+    print('snippet', snippet)
 
     i, j = T.shape
     i -= 1
@@ -197,10 +207,9 @@ def traceback(dp_info):
                 break
             '''
 
-        # TODO make set of indices as well
-        alignments[end_index] = curr_alignment[::-1]
+        if end_index != -1:
+            alignments[end_index] = curr_alignment[::-1]
 
-    # TODO update tests to expect this output format
     return alignments, max_score
 
 
@@ -228,13 +237,14 @@ class TextProgress(object):
         #self.memory = 10
 
         self.homophone_dict = load_homophones()
-        self.token_seq = self.standardize(text)
+        self.token_seq = self.standardize_block(text)
 
 
     def align(self, snippet):
         """
         Returns a list of end indices of alignments and the best score.
         """
+        print('SNIPPET', snippet)
         return traceback(calc_dp(self.token_seq, snippet))
 
     
@@ -244,6 +254,7 @@ class TextProgress(object):
         d['text'] = [{'index': i, 'correct': self.progress[i]} for i, w in enumerate(self.token_seq)\
                 if i in self.progress]
         return d
+
 
     def update_scores(self, alignment, align_end_index):
         # TODO off by one?
@@ -268,8 +279,13 @@ class TextProgress(object):
                 confidences should be floats
         """
 
+        print(interpretations)
+
         # standardize everything we get 
-        interpretations = [[self.standardize(e) for e in snippet] for snippet in interpretations]
+        interpretations = [([self.standardize_string(e) for e in snippet], confidence) \
+                for snippet, confidence in interpretations]
+
+        print(interpretations)
 
         # TODO could use same dp on lists created from each word to calculate a similarity
         # score for the word, which we could then threshold
@@ -292,8 +308,12 @@ class TextProgress(object):
         max_score = 0   # 0 is min possible score if no scores < 0
         best_alignment = None
 
+        print('INTERPRETATIONS', interpretations)
+
         # TODO may not work if score can go below zero. set to min possible otherwise.
-        for alignment, score in map(self.align, interpretations):
+        for alignment, score in map(lambda x: self.align(x[0]), interpretations):
+
+            print(alignment, score)
             # not dealing with ties for now
             if score >= max_score:
                 max_score = score
@@ -317,11 +337,10 @@ class TextProgress(object):
                     assert not closest is None
                     assert not min_dist is None
 
-                    distance = abs(end_index - marker)
+                    distance = abs(end_index - self.marker)
                     if distance <= min_dist:
                         min_dist = distance
-                        closest = end_index
-
+                        closest = end_index 
             align_end_index = closest
 
         elif len(best_alignment) == 1:
@@ -336,6 +355,7 @@ class TextProgress(object):
             return
 
         alignment = best_alignment[align_end_index]
+        print('ALIGNMENT', alignment)
         self.update_scores(alignment, align_end_index)
 
         # update our estimate of where the reader is in the text
@@ -362,7 +382,12 @@ class TextProgress(object):
         return self.progress_dict()
 
     
-    def standardize(string):
+    def standardize_string(self, string):
         """
         """
-        process_string(string, self.homophone_dict)
+        return process_string(string, self.homophone_dict)
+
+    def standardize_block(self, block):
+        """
+        """
+        return process_block(block, self.homophone_dict)
