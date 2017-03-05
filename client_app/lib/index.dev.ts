@@ -9,6 +9,7 @@ import 'ng-simpledb';
 
 //styles
 import './styles/bootstrap/_bootstrap.scss';
+import './styles/style.css';
 
 //components
 import Components from './components/index.ts';

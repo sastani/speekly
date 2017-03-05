@@ -5,10 +5,14 @@
 	margin: 30px 0;
 }
 
-.display-txt > span.complete{
+.display-txt > span.correct{
 	color: #00b909;
 }
 
-.display-txt > span.marked{
+.display-txt > span.incorrect{
+	color: #9e0c17;
+}
+
+.display-txt > span.marker{
 	color: #b9b900;
 }

@@ -4,7 +4,7 @@ class HomeController implements ng.IComponentController{
 	public socket : WebSocket;
 	public socketActive : boolean;
 	public text : string;
-	public textMap : any;
+	public textList : any;
 	public hasStarted : boolean;
 
 	constructor(){
@@ -15,7 +15,7 @@ class HomeController implements ng.IComponentController{
 		// Initalize test text
 		this.text = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Commodi debitis cupiditate blanditiis, nostrum assumenda maxime id ducimus error libero minima eos molestias quaerat quidem aut nobis tempore vel illo facere.'
 		this.hasStarted = false;
-		this.textMap = []
+		this.textList = [];
 
 		// Init websocket
 		this.socket = new WebSocket(socketUrl);
@@ -31,9 +31,7 @@ class HomeController implements ng.IComponentController{
 	}
 
 	textToMap(text : string) : any{
-		const textList = text.split(' ');
-		const textMap = textList.map(text => ({value: text, correct: false, read: false}));
-		return textMap;
+		return text.split(' ');
 	}
 
 	convertFloat32ToInt16(buffer){
