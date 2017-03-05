@@ -13,7 +13,7 @@ class HomeController implements ng.IComponentController{
 		this.socketActive = false;
 
 		// Initalize test text
-		this.text = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Commodi debitis cupiditate blanditiis, nostrum assumenda maxime id ducimus error libero minima eos molestias quaerat quidem aut nobis tempore vel illo facere.'
+		this.text = 'I like to eat cheeseburgers and play with my friends outside. We do cool stuff man.'
 		this.hasStarted = false;
 		this.textList = [];
 

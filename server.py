@@ -25,7 +25,7 @@ async def handle_audio(speech_client, audio, progress_manager, ws):
 
         output = progress_manager.update(to_update)
 
-        print(output)
+        print(progress_manager.token_seq, marker, output)
 
         ws.send_str('hi')
 
