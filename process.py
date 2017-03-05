@@ -166,12 +166,15 @@ def traceback(dp_info):
 
         end_index = -1
         curr_alignment = []
+        print('SNIPPET', snippet)
 
         # TODO need to parse these alignments into scores of words prior to marker
         while i >= 0 and j >= 0:
+            print('CURR_ALIGNMENT', curr_alignment)
             #print(i, j)
             if T[i,j] == b'm':
                 curr_alignment += snippet[j]
+                print('SNIPPET J IN M', snippet[j])
 
                 # if we only want last index of any character called as a match
                 # we can return early
@@ -186,12 +189,14 @@ def traceback(dp_info):
 
             elif T[i,j] == b'r':
                 # does matter here. may be source of bugs.
-                curr_alignment += [None] #text[i]
+                print('CHARACTER ABSENT FROM TEXT (R)')
+                curr_alignment += ['_'] #text[i]
                 i -= 1
 
             elif T[i,j] == b'l':
                 # does matter here. may be source of bugs.
                 # TODO check still passes initial tests w/ snippet[j]
+                print('SNIPPET J IN L', snippet[j])
                 curr_alignment += snippet[j] #'*'
                 j -= 1
 
@@ -245,6 +250,7 @@ class TextProgress(object):
         Returns a list of end indices of alignments and the best score.
         """
         print('SNIPPET', snippet)
+        
         return traceback(calc_dp(self.token_seq, snippet))
 
     
@@ -320,7 +326,7 @@ class TextProgress(object):
                 best_alignment = alignment
 
         assert not best_alignment is None, 'best_alignment was not updated'
-        print('best_alignment', best_alignment)
+        print('BEST_ALIGNMENT', best_alignment)
 
         # if there are multiple tied alignments, take the one closest to the current marker
         # TODO would be better to use prediction rather than raw marker

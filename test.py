@@ -122,6 +122,6 @@ class TestAlignment(unittest.TestCase):
 if __name__ == '__main__':
     ta = TestAlignment()
 
-    ta.test_alignment()
+    #ta.test_alignment()
     #ta.test_textprogress_init()
     ta.test_update()
