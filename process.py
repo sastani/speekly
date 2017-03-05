@@ -66,6 +66,9 @@ def calc_dp(text, snippet, indel=0, verbose=False):
     # TODO i want indel to not be applied at beginning of alignment, but at end
     # not sure if this accomplishes that... the problems dp solves are usually symmetric
 
+    print('text in dp', text)
+    print('snippet in dp', snippet)
+
     if verbose:
         print(text, snippet)
 
@@ -241,6 +244,7 @@ class TextProgress(object):
         """
         Returns a list of end indices of alignments and the best score.
         """
+        print('SNIPPET', snippet)
         return traceback(calc_dp(self.token_seq, snippet))
 
     
@@ -250,6 +254,7 @@ class TextProgress(object):
         d['text'] = [{'index': i, 'correct': self.progress[i]} for i, w in enumerate(self.token_seq)\
                 if i in self.progress]
         return d
+
 
     def update_scores(self, alignment, align_end_index):
         # TODO off by one?
@@ -303,7 +308,7 @@ class TextProgress(object):
         max_score = 0   # 0 is min possible score if no scores < 0
         best_alignment = None
 
-        print(interpretations)
+        print('INTERPRETATIONS', interpretations)
 
         # TODO may not work if score can go below zero. set to min possible otherwise.
         for alignment, score in map(lambda x: self.align(x[0]), interpretations):
@@ -335,8 +340,7 @@ class TextProgress(object):
                     distance = abs(end_index - self.marker)
                     if distance <= min_dist:
                         min_dist = distance
-                        closest = end_index
-
+                        closest = end_index 
             align_end_index = closest
 
         elif len(best_alignment) == 1:
@@ -351,6 +355,7 @@ class TextProgress(object):
             return
 
         alignment = best_alignment[align_end_index]
+        print('ALIGNMENT', alignment)
         self.update_scores(alignment, align_end_index)
 
         # update our estimate of where the reader is in the text

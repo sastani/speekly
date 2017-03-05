@@ -81,7 +81,7 @@ class TestAlignment(unittest.TestCase):
 
         progress_tracker.update(input1)
 
-        self.assertEqual(3, progress_tracker.marker)
+        self.assertEqual(3, progress_tracker.marker, progress_tracker.marker)
 
         # the internal dict, not yet converted to JSON friendly format
         self.assertEqual({'marker': 3, 'text': [(0, True), (1,True), (2,True)]}, \
