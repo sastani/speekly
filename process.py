@@ -73,7 +73,7 @@ def calc_dp(text, snippet, indel=0, verbose=False):
     return D, T, text, snippet
 
 
-def traceback(dp_info, full_alignment=False):
+def traceback(dp_info):
     """
     Returns set of indices of last position in text scored as best in the dynamic programming.
 
@@ -119,7 +119,7 @@ def traceback(dp_info, full_alignment=False):
         i -= 1
         j -= 1
 
-        alignment = ''
+        alignment = []
 
         while i >= 0 and j >= 0:
             #print(i, j)
@@ -129,10 +129,9 @@ def traceback(dp_info, full_alignment=False):
                 # if we only want last index of any character called as a match
                 # we can return early
                 # (use this after debugging whether whole alignment seems reasonable)
-                if not full_alignment:
-                    # should be the index in the text (therefore i)
-                    end_indices.add(i)
-                    break
+
+                # should be the index in the text (therefore i)
+                end_indices.add(i)
 
                 i -= 1
                 j -= 1
@@ -162,10 +161,8 @@ def traceback(dp_info, full_alignment=False):
         # TODO make set of indices as well
         alignments.append(alignment[::-1])
 
-    if full_alignment:
-        return alignments, max_score
-    else:
-        return end_indices, max_score
+    # TODO update tests to expect this output format
+    return alignment, end_indices, max_score
 
 
 class TextProgress(object):
@@ -174,7 +171,12 @@ class TextProgress(object):
         # TODO tokenize
         self.text = text
         self.token_seq = word_tokenize(text)
-        self.position = 0
+
+        self.marker = 0
+        # list of words attempted to either floats or right / wrong
+        # TODO default dict (not read)
+        self.progress = dict()
+
         self.correct = np.empty(len(text)) * np.nan
         self.last_update = -1
         self.last_marker = -1
@@ -195,6 +197,12 @@ class TextProgress(object):
         Returns a list of end indices of alignments and the best score.
         """
         return traceback(calc_dp(self.token_seq, snippet))
+
+    
+    def progress_dict():
+        d = dict()
+        d['marker'] = self.marker
+        d['progress'] = 
 
 
     def update(self, interpretations):
@@ -217,7 +225,7 @@ class TextProgress(object):
             else:
                 elapsed = time.time() - self.last_update
 
-            self.last_marker = marker
+            self.last_marker = self.marker
 
         # if this really simple solution actually works best, maybe just use that
         # or weight as alignment is
@@ -227,10 +235,10 @@ class TextProgress(object):
         # penalize reader more for the string matching text best coming from a lower confidence
 
         max_score = 0   # 0 is min possible score if no scores < 0
-        best_indices = {}
+        best_indices = set()
 
         # TODO may not work if score can go below zero. set to min possible otherwise.
-        for index_set, score in map(self.align, interpretations):
+        for index_set, score in map(lambda x: x[2], map(self.align, interpretations)):
             # not dealing with ties for now
             if score > max_score:
                 max_score = score
@@ -251,14 +259,24 @@ class TextProgress(object):
                     min_dist = distance
                     closest = curr
 
+        elif len(best_indices) == 1:
+            align_end_index = best_indices.pop()
+
+        # len(indices) == 0
+        else:
+            # TODO
+            print('no alignment found.')
+
+        update_scores(alignment, align_end_index)
+
         # update our estimate of where the reader is in the text
         if self.dynamic:
-            self.marker = round(self.align_weight * self.align(new_text) + \
+            self.marker = round(self.align_weight * align_end_index + \
                     (1 - self.align_weight) * self.marker + self.estimated_rate * elapsed)
 
         # TODO will probably want align_weight cloes to 1 for this case
         else:
-            self.marker = round(self.align_weight * self.align(new_text) + \
+            self.marker = round(self.align_weight * align_end_index + \
                     (1 - self.align_weight) * self.marker)
 
         if self.dynamic:
@@ -271,4 +289,6 @@ class TextProgress(object):
             self.last_update = time.time()
 
         # TODO signal new words correct or incorrect
+
+        self.send_to_client(self.progress_dict())
         
