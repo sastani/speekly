@@ -5,6 +5,11 @@ import get_data
 from google.cloud import speech
 import re
 
+def process(ls, homo_dic):
+    for w in ls:
+        w = process_string(w)
+    return ls
+
 def process_text(in_file, homo_dic):
     f = open(in_file, "r")
     words = []
