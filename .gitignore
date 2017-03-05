@@ -1,3 +1,5 @@
 __pycache__/
+.idea/
+client_app/
 *.swp
 tmp.py

@@ -1,9 +1,43 @@
 
+import re
+import io
+
 import numpy as np
 from nltk.tokenize import word_tokenize
 import time
-import process_text
 
+#######################################################################################
+# Sina's text processing functions
+
+def process_text(in_file, homo_dic):
+    f = open(in_file, "r")
+    words = []
+    line = f.readline()
+    while line:
+        curr_words = line.split()
+        for word in curr_words:
+            word = process_string(word, homo_dic)
+            words.append(word)
+        line = f.readline()
+    return words
+
+def process_string(word, homo_dic):
+    word = re.sub(r'[^a-zA-Z]', '', word)
+    word = word.lower()
+    if word in homo_dic:
+        word = homo_dic[word]
+    return word
+
+def load_homophones(in_file='./homophones-clean.txt'):
+    related_words = {}
+    f = open(in_file, "r")
+    line = f.readline()
+    key_value = line.split(",")
+    related_words[key_value[0]] = key_value[1]
+    return related_words
+
+#######################################################################################
+# Alignment functions / backend state
 
 # TODO pass Sina's function as is_equivalent, earlier in process
 def score(word_a, word_b, is_equivalent=lambda a, b: a == b):
@@ -133,9 +167,9 @@ def traceback(dp_info):
                 # we can return early
                 # (use this after debugging whether whole alignment seems reasonable)
 
-                assert end_index == -1, 'end_index was already set. unexpected.'
                 # should be the index in the text (therefore i)
-                end_index = i
+                if end_index == -1:
+                    end_index = i
 
                 i -= 1
                 j -= 1
@@ -164,7 +198,7 @@ def traceback(dp_info):
             '''
 
         # TODO make set of indices as well
-        alignments[end_index] = alignment[::-1]
+        alignments[end_index] = curr_alignment[::-1]
 
     # TODO update tests to expect this output format
     return alignments, max_score
@@ -173,10 +207,7 @@ def traceback(dp_info):
 class TextProgress(object):
 
     def __init__(self, text, dynamic=False):
-        # TODO tokenize
-        self.text = text
-        self.token_seq = word_tokenize(text)
-
+        #self.text = text
         self.marker = 0
         # list of words attempted to either floats or right / wrong
         # TODO default dict (not read)
@@ -196,6 +227,9 @@ class TextProgress(object):
         # could be a function of text length as well
         #self.memory = 10
 
+        self.homophone_dict = load_homophones()
+        self.token_seq = self.standardize(text)
+
 
     def align(self, snippet):
         """
@@ -207,13 +241,11 @@ class TextProgress(object):
     def progress_dict(self):
         d = dict()
         d['marker'] = self.marker
-        d['text'] = [{'index': i, 'correct': self.progress[i] for i, w in enumerate(self.token_seq) \
+        d['text'] = [{'index': i, 'correct': self.progress[i]} for i, w in enumerate(self.token_seq)\
                 if i in self.progress]
+        return d
 
-        return progress_dict
-
-
-    def update_scores(self, alignment, align_end_index)
+    def update_scores(self, alignment, align_end_index):
         # TODO off by one?
         start_index = align_end_index - len(alignment)
 
@@ -235,6 +267,9 @@ class TextProgress(object):
                 snippets should be lists of strings of standardized text
                 confidences should be floats
         """
+
+        # standardize everything we get 
+        interpretations = [[self.standardize(e) for e in snippet] for snippet in interpretations]
 
         # TODO could use same dp on lists created from each word to calculate a similarity
         # score for the word, which we could then threshold
@@ -325,4 +360,9 @@ class TextProgress(object):
         # TODO signal new words correct or incorrect
 
         self.send_to_client(self.progress_dict())
-        
+
+    
+    def standardize(string):
+        """
+        """
+        process_string(string, self.homophone_dict)
