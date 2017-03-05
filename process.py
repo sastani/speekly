@@ -170,7 +170,7 @@ def traceback(dp_info, full_alignment=False):
 
 class TextProgress(object):
 
-    def __init__(self, text):
+    def __init__(self, text, dynamic=False):
         # TODO tokenize
         self.text = text
         self.token_seq = word_tokenize(text)
@@ -180,6 +180,7 @@ class TextProgress(object):
         self.last_marker = -1
         self.estimate_rate = 0
         self.min_score = 0
+        self.dynamic = dynamic
 
         # controls length of subsequence we try to align to text
         # could be a function of text length as well
@@ -207,17 +208,20 @@ class TextProgress(object):
         # TODO could use same dp on lists created from each word to calculate a similarity
         # score for the word, which we could then threshold
 
-        if self.last_update == -1:
-            elapsed = 0
-        else:
-            elapsed = time.time() - self.last_update
+        if dynamic:
+            if self.last_update == -1:
+                elapsed = 0
+            else:
+                elapsed = time.time() - self.last_update
 
+            self.last_marker = marker
+
+        # if this really simple solution actually works best, maybe just use that
+        # or weight as alignment is
         #self.marker += len(new_text)
 
         # TODO run alignments with each of few most confident responses
         # penalize reader more for the string matching text best coming from a lower confidence
-
-        self.last_marker = marker
 
         max_score = 0   # 0 is min possible score if no scores < 0
         best_indices = {}
@@ -245,21 +249,23 @@ class TextProgress(object):
                     closest = curr
 
         # update our estimate of where the reader is in the text
-        self.marker = round(self.align_weight * self.align(new_text) + \
-                (1 - self.align_weight) * self.marker + self.estimated_rate * elapsed)
+        if dynamic:
+            self.marker = round(self.align_weight * self.align(new_text) + \
+                    (1 - self.align_weight) * self.marker + self.estimated_rate * elapsed)
 
-        # update estimated reading rate
-        # words per second (change in marker / sampling interval)
-        # not allowing the estimate to include them reading backwards
-        if elapsed != 0:
-            self.estimated_rate = max(0, self.last_marker - self.marker)
+        # TODO will probably want align_weight cloes to 1 for this case
+        else:
+            self.marker = round(self.align_weight * self.align(new_text) + \
+                    (1 - self.align_weight) * self.marker)
 
-        self.last_update = time.time()
+        if dynamic:
+            # update estimated reading rate
+            # words per second (change in marker / sampling interval)
+            # not allowing the estimate to include them reading backwards
+            if elapsed != 0:
+                self.estimated_rate = max(0, self.last_marker - self.marker)
+
+            self.last_update = time.time()
 
         # TODO signal new words correct or incorrect
-        '''
-        # should get an index from update
-        a = self.align(new_text)
-        print(a)
-        '''
-
+        
