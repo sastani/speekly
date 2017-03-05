@@ -6,8 +6,8 @@ import get_data
 from google.cloud import speech
 import re
 
-def process_text(file, homo_dic):
-    f = open(file, "r")
+def process_text(in_file, homo_dic):
+    f = open(in_file, "r")
     words = []
     line = f.readline()
     while line:
@@ -18,12 +18,12 @@ def process_text(file, homo_dic):
         line = f.readline()
     return words
 
-def process_string(str, homo_dic):
-    str = re.sub(r'[^a-zA-Z]', '', str)
-    str = str.lower()
-    if str in homo_dic:
-        str = homo_dic[str]
-    return str
+def process_string(word, homo_dic):
+    word = re.sub(r'[^a-zA-Z]', '', word)
+    word = word.lower()
+    if word in homo_dic:
+        word = homo_dic[word]
+    return word
 
 
 def to_sttapi(audio, smprate):
@@ -46,17 +46,17 @@ def to_sttapi(audio, smprate):
     for w in recog_words:
         print(w.alternatives[0].transcript)
 
-def map_homophones(file):
+def map_homophones(in_file):
     related_words = {}
-    f = open(file, "r")
+    f = open(in_file, "r")
     line = f.readline()
     key_value = line.split(",")
     related_words[key_value[0]] = key_value[1]
     return related_words
 
-def clean_homophones(file):
-    f = open(file, "r")
-    fout = open(file.split(".")[0]+"-clean.txt", "w")
+def clean_homophones(in_file):
+    f = open(in_file, "r")
+    fout = open(in_file.split(".")[0]+"-clean.txt", "w")
     line = f.readline()
     while line:
         new_line = line.split()
@@ -66,5 +66,9 @@ def clean_homophones(file):
         line = f.readline()
 
 #wav = "/Users/sinaastani/Documents/speekly/charlottes/CharlottesWeb0-5s.wav"
-new_fl = get_data.convert_to_raw("./test_recording.m4a", "m4a")
-to_sttapi(new_fl[0], new_fl[1])
+#new_fl = get_data.convert_to_raw("./test_recording.m4a", "m4a")
+#to_sttapi(new_fl[0], new_fl[1])
+
+homos = map_homophones("./homophones-clean.txt")
+words = process_text("/Users/sinaastani/Documents/speekly/charlottes/Charlottes0-16.txt", homos)
+print(words)
