@@ -8,7 +8,9 @@
 			<p>{{$ctrl.text}}</p>
 		</div>
 		<div ng-if='$ctrl.hasStarted'>
-			<p class='display-txt'><span ng-repeat='map in $ctrl.textMap'>{{map.value}}&nbsp;</span></p>
+			<p class='display-txt'><span ng-class='$ctrl.getClass($index)' ng-repeat='text in $ctrl.textList'>{{text}}&nbsp;</span></p>
 		</div>
+
+		<p>{{$ctrl.progressDict}}{{$ctrl.marker}}</p>
 	</div>
 </div>
