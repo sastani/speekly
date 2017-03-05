@@ -359,7 +359,7 @@ class TextProgress(object):
 
         # TODO signal new words correct or incorrect
 
-        self.send_to_client(self.progress_dict())
+        return self.progress_dict()
 
     
     def standardize(string):

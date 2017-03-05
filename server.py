@@ -2,13 +2,14 @@ from aiohttp import web, WSMsgType
 import asyncio
 import io
 import copy
+import process
 
 from google.cloud import speech
 
 loop = asyncio.get_event_loop()
 app = web.Application(loop=loop)
 
-async def handle_audio(speech_client, audio):
+async def handle_audio(speech_client, audio, progress_manager, ws):
 
     try:
         stt_stream = speech_client.sample(content=audio,
@@ -17,8 +18,16 @@ async def handle_audio(speech_client, audio):
 
         results = list(stt_stream.sync_recognize())
 
+        to_update = []
+
         for w in results:
-            print(w.alternatives[0].transcript)
+            to_update.append((w.alternatives[0].transcript.split(' '), w.alternatives[0].confidence))
+
+        output = progress_manager.update(to_update)
+
+        print(output)
+
+        ws.send_str('hi')
 
     except Exception as ValueError:
         pass
@@ -39,9 +48,14 @@ async def websocket_handler(request):
     accum2 = b''
     i = 0
 
+    progress_manager = None
+
     async for msg in ws:
 
         if msg.type == WSMsgType.BINARY:
+
+            if progress_manager == None:
+                continue
 
             # Add to the accumulator variables and the counter
             accum1 += msg.data
@@ -52,7 +66,7 @@ async def websocket_handler(request):
                 audio = copy.deepcopy(accum1)
                 accum1 = b''
                 i = 0
-                coro = handle_audio(speech_client, audio)
+                coro = handle_audio(speech_client, audio, progress_manager, ws)
                 future = asyncio.ensure_future(coro)
 
         if msg.type == WSMsgType.TEXT:
@@ -60,7 +74,7 @@ async def websocket_handler(request):
             if msg.data == 'close':
                 await ws.close()
 
-            # ws.send_str(msg.data + '/answer')
+            progress_manager = process.TextProgress(msg.data)
 
         elif msg.type == WSMsgType.ERROR:
             print('ws connection closed with exception %s' %

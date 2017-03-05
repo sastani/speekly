@@ -27,7 +27,11 @@ class HomeController implements ng.IComponentController{
 
 	addEvents(socket : WebSocket){
 		/* Add respective events to the websockets */
-		//socket.addEventListener('message', this.wsMessage);
+		socket.addEventListener('message', this.wsMessage);
+	}
+
+	wsMessage(message : string){
+		console.log(message);
 	}
 
 	textToMap(text : string) : any{
@@ -56,6 +60,9 @@ class HomeController implements ng.IComponentController{
 		if (!this.socketActive){
 			return;
 		}
+
+		// Set audio object
+		this.socket.send(this.text);
 
 		// Create the stream
 		window.navigator.getUserMedia({audio: true, video: false}, (stream) => {
