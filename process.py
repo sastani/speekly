@@ -1,10 +1,12 @@
 
 import re
 import io
-
+import numtoword
 import numpy as np
 from nltk.tokenize import word_tokenize
 import time
+
+verbose = False
 
 #######################################################################################
 # Sina's text processing functions
@@ -22,10 +24,13 @@ def process_text(in_file, homo_dic):
     return words
 
 def process_string(word, homo_dic):
-    word = re.sub(r'[^a-zA-Z]', '', word)
-    word = word.lower()
-    if word in homo_dic:
-        word = homo_dic[word]
+    if word.isdigit():
+        word = numtoword(word)
+    else:
+        word = re.sub(r'[^a-zA-Z]', '', word)
+        word = word.lower()
+        if word in homo_dic:
+            word = homo_dic[word]
     return word
 
 def load_homophones(in_file='./homophones-clean.txt'):
@@ -38,8 +43,13 @@ def load_homophones(in_file='./homophones-clean.txt'):
 
 def process_block(block, homo_dict):
     sequence = []
+    block = block.replace('-', ' ')
     for s in block.split():
-        sequence.append(process_string(s, homo_dict))
+        proc_word = process_string(s, homo_dict)
+        #split in case of return of "sixty four"
+        proc_words = proc_word.split()
+        for w in proc_words:
+            sequence.append(w)
     
     return sequence
 
@@ -51,11 +61,12 @@ def score(word_a, word_b, is_equivalent=lambda a, b: a == b):
     if is_equivalent(word_a,  word_b):
         return 1
     else:
-        return 0
+        # TODO any cases where i am assuming nonnegative cost / util
+        return -1
 
 
 # TODO numba this and traceback
-def calc_dp(text, snippet, indel=0, verbose=False):
+def calc_dp(text, snippet, indel=0):
     """
     Calculates dynamic programming table and traceback information for snippet and text.
 
@@ -65,9 +76,6 @@ def calc_dp(text, snippet, indel=0, verbose=False):
     """
     # TODO i want indel to not be applied at beginning of alignment, but at end
     # not sure if this accomplishes that... the problems dp solves are usually symmetric
-
-    if verbose:
-        print(text, snippet)
 
     assert len(text) >= len(snippet), 'length of text should be longer than chunks ' + \
             'returned from API'
@@ -108,10 +116,9 @@ def calc_dp(text, snippet, indel=0, verbose=False):
             elif best == skip_snippet:
                 T[i-1,j-1] = 'l'
 
-            if verbose:
-                print(T[i-1,j-1])
-                print(D)
-                print(T)
+            #if verbose:
+            #    print(D)
+            #    print(T)
                
     return D, T, text, snippet
 
@@ -147,29 +154,37 @@ def traceback(dp_info):
         if D[D.shape[0]-1,j] == max_score:
             maxima.append((D.shape[0]-1,j))
 
-    #print('indices w/ max score on edge of dp table', maxima)
+    if verbose:
+        print('indices w/ max score on edge of dp table', maxima)
 
     alignments = dict()
-
-    #print(D)
-    #print(T)
 
     for m in maxima:
         i, j = m
         i -= 1
         j -= 1
 
+        if verbose:
+            print('')
+            print('new maxima')
+
+        #print('maxima', m)
+
         end_index = -1
         curr_alignment = []
 
         # TODO need to parse these alignments into scores of words prior to marker
         while i >= 0 and j >= 0:
-            #print('CURR_ALIGNMENT', curr_alignment)
-            #print(i, j)
+            if verbose:
+                print('CURR_ALIGNMENT', curr_alignment)
+            #print('before ifs', i, j)
+
             if T[i,j] == b'm':
                 curr_alignment += [snippet[j]]
-                #print('SNIPPET TYPE IN M', type(snippet[j]))
-                #print('SNIPPET J IN M', snippet[j])
+
+                if verbose:
+                    print('SNIPPET J IN M', snippet[j])
+                    print('text i', text[i])
 
                 # if we only want last index of any character called as a match
                 # we can return early
@@ -182,9 +197,12 @@ def traceback(dp_info):
                 i -= 1
                 j -= 1
 
+            # TODO revisit indexing. sanity check. switch i & j decrement?
             elif T[i,j] == b'r':
                 # does matter here. may be source of bugs.
-                #print('CHARACTER ABSENT FROM TEXT (R)')
+                if verbose:
+                    print('CHARACTER ABSENT FROM TEXT (R)')
+
                 curr_alignment += [None] #text[i]
                 i -= 1
 
@@ -192,7 +210,8 @@ def traceback(dp_info):
                 # does matter here. may be source of bugs.
                 #print('SNIPPET TYPE IN L', type(snippet[j]))
                 # TODO check still passes initial tests w/ snippet[j]
-                #print('SNIPPET J IN L', snippet[j])
+                if verbose:
+                    print('SNIPPET J IN L', snippet[j])
                 curr_alignment += [snippet[j]] #'*'
                 j -= 1
 
@@ -210,6 +229,13 @@ def traceback(dp_info):
 
         if end_index != -1:
             alignments[end_index] = curr_alignment[::-1]
+
+    '''
+    print(T)
+    print(D)
+    print(alignments)
+    print(max_score)
+    '''
 
     return alignments, max_score
 
@@ -257,7 +283,7 @@ class TextProgress(object):
         return d
 
 
-    def update_scores(self, alignment, align_end_index):
+    def update_scores(self, alignment, length_diff):
         '''
         start_index = align_end_index - len(alignment)
 
@@ -274,11 +300,31 @@ class TextProgress(object):
             if not alignment[i] is None:
         '''
 
+        print('self.progress', self.progress)
+        print('input alignment', alignment)
+        print('lendiff', length_diff)
+
+        # words we have skipped that are not already scored should be False
+        # words once marked false but now true will probably (?) be in alignment
+        # anyway
+        for i in range(length_diff):
+            if not i in self.progress:
+                self.progress[i] = False
+
+        if verbose:
+            print(alignment)
+            print(len(alignment))
+
         non_none_indices = [i for i, e in enumerate(alignment) if not e is None]
+
+        if verbose:
+            print('NON_NONE_INDICES', non_none_indices)
+
         last_non_none = max(non_none_indices)
         correct = [not a is None for a in alignment[:last_non_none + 1]]
+
         for i, a in enumerate(correct):
-            self.progress[i] = a
+            self.progress[i + length_diff] = a
 
 
     def update(self, interpretations):
@@ -291,6 +337,11 @@ class TextProgress(object):
                 snippets should be lists of strings of standardized text
                 confidences should be floats
         """
+
+        if verbose:
+            print('')
+            print('')
+            print('CALLING UPDATE WITH INTERPRETATIONS:', interpretations)
 
         # standardize everything we get 
         interpretations = [([self.standardize_string(e) for e in snippet], confidence) \
@@ -323,6 +374,7 @@ class TextProgress(object):
             # not dealing with ties for now
             if score >= max_score:
                 max_score = score
+                print(alignment)
                 best_alignment = alignment
 
         assert not best_alignment is None, 'best_alignment was not updated'
@@ -360,7 +412,12 @@ class TextProgress(object):
             return
 
         alignment = best_alignment[align_end_index]
-        self.update_scores(alignment, align_end_index)
+        '''
+        print('alignment right before update_score', alignment)
+        print(len(alignment))
+        '''
+        len_diff = len(self.token_seq) - len(alignment)
+        self.update_scores(alignment, len_diff)
 
         # update our estimate of where the reader is in the text
         if self.dynamic:
@@ -390,6 +447,7 @@ class TextProgress(object):
         """
         """
         return process_string(string, self.homophone_dict)
+
 
     def standardize_block(self, block):
         """
