@@ -3,6 +3,7 @@ import asyncio
 import io
 import copy
 import process
+import json
 
 from google.cloud import speech
 
@@ -25,11 +26,11 @@ async def handle_audio(speech_client, audio, progress_manager, ws):
 
         output = progress_manager.update(to_update)
 
-        print(progress_manager.token_seq, marker, output)
+        ws.send_str(json.dumps(output))
 
-        ws.send_str('hi')
+    except Exception as e:
+        print(e)
 
-    except Exception as ValueError:
         pass
 
 async def websocket_handler(request):
@@ -62,7 +63,7 @@ async def websocket_handler(request):
             i += 1
 
             #  cutoff
-            if i == 10:
+            if i == 5:
                 audio = copy.deepcopy(accum1)
                 accum1 = b''
                 i = 0
