@@ -5,8 +5,9 @@ import time
 import process_text
 
 
-def score(word_a, word_b):
-    if word_a == word_b:
+# TODO pass Sina's function as is_equivalent, earlier in process
+def score(word_a, word_b, is_equivalent=lambda a, b: a == b):
+    if is_equivalent(word_a,  word_b):
         return 1
     else:
         return 0
@@ -109,8 +110,7 @@ def traceback(dp_info):
 
     #print('indices w/ max score on edge of dp table', maxima)
 
-    alignments = []
-    end_indices = set()
+    alignments = dict()
 
     #print(D)
     #print(T)
@@ -120,31 +120,35 @@ def traceback(dp_info):
         i -= 1
         j -= 1
 
-        alignment = []
+        end_index = -1
+        curr_alignment = []
 
+        # TODO need to parse these alignments into scores of words prior to marker
         while i >= 0 and j >= 0:
             #print(i, j)
             if T[i,j] == b'm':
-                alignment += snippet[j]
+                curr_alignment += snippet[j]
 
                 # if we only want last index of any character called as a match
                 # we can return early
                 # (use this after debugging whether whole alignment seems reasonable)
 
+                assert end_index == -1, 'end_index was already set. unexpected.'
                 # should be the index in the text (therefore i)
-                end_indices.add(i)
+                end_index = i
 
                 i -= 1
                 j -= 1
 
             elif T[i,j] == b'r':
                 # does matter here. may be source of bugs.
-                alignment += '_' #text[i]
+                curr_alignment += [None] #text[i]
                 i -= 1
 
             elif T[i,j] == b'l':
                 # does matter here. may be source of bugs.
-                alignment += snippet[i] #'*'
+                # TODO check still passes initial tests w/ snippet[j]
+                curr_alignment += snippet[j] #'*'
                 j -= 1
 
             else:
@@ -160,10 +164,10 @@ def traceback(dp_info):
             '''
 
         # TODO make set of indices as well
-        alignments.append(alignment[::-1])
+        alignments[end_index] = alignment[::-1]
 
     # TODO update tests to expect this output format
-    return alignment, end_indices, max_score
+    return alignments, max_score
 
 
 class TextProgress(object):
@@ -200,10 +204,25 @@ class TextProgress(object):
         return traceback(calc_dp(self.token_seq, snippet))
 
     
-    def progress_dict():
+    def progress_dict(self):
         d = dict()
         d['marker'] = self.marker
-        d['progress'] = 
+        d['text'] = [i, self.progress[i] for i, w in enumerate(self.token_seq) \
+                if i in self.progress]
+
+        return progress_dict
+
+
+    def update_scores(self, alignment, align_end_index)
+        # TODO off by one?
+        start_index = align_end_index - len(alignment)
+
+        # '_' is magic character for a word that was in token_seq but not
+        # in the snippet aligned to it
+        correct = [a != '_' for a in alignment]
+
+        for i, c in enumerate(correct):
+            self.progress[i + start_index] = c
 
 
     def update(self, interpretations):
@@ -236,42 +255,53 @@ class TextProgress(object):
         # penalize reader more for the string matching text best coming from a lower confidence
 
         max_score = 0   # 0 is min possible score if no scores < 0
-        best_indices = set()
         best_alignment = None
 
         # TODO may not work if score can go below zero. set to min possible otherwise.
-        for alignment, index_set, score in map(self.align, interpretations):
+        for alignment, score in map(self.align, interpretations):
             # not dealing with ties for now
             if score >= max_score:
                 max_score = score
-                best_indices = index_set
+                best_alignment = alignment
 
         assert not best_alignment is None, 'best_alignment was not updated'
 
         # if there are multiple tied alignments, take the one closest to the current marker
         # TODO would be better to use prediction rather than raw marker
-        if len(best_indices) > 1:
-            indices_copy = set(best_indices)
+        if len(best_alignment) > 1:
+            closest = None
+            min_dist = None
 
-            closest = indices_copy.pop()
-            min_dist = abs(closest - marker)
+            for end_index in best_alignment.keys():
+                if closest == None and min_dist == None:
+                    closest = end_index
+                    min_dist = abs(closest - self.marker)
 
-            while len(indices_copy) > 0:
-                curr = indices_copy.pop()
-                distance = abs(curr - marker)
-                if distance < min_dist:
-                    min_dist = distance
-                    closest = curr
+                else:
+                    # TODO remove these if works a few times
+                    assert not closest is None
+                    assert not min_dist is None
 
-        elif len(best_indices) == 1:
-            align_end_index = best_indices.pop()
+                    distance = abs(end_index - marker)
+                    if distance <= min_dist:
+                        min_dist = distance
+                        closest = end_index
+
+            align_end_index = closest
+
+        elif len(best_alignment) == 1:
+            align_end_index = best_alignment.keys().pop()
 
         # len(indices) == 0
         else:
             # TODO
-            print('no alignment found.')
+            # fail?
 
-        update_scores(alignment, align_end_index)
+            print('no alignment found.')
+            return
+
+        alignment = best_alignment[align_end_index]
+        self.update_scores(alignment, align_end_index)
 
         # update our estimate of where the reader is in the text
         if self.dynamic:
