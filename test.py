@@ -107,8 +107,19 @@ class TestAlignment(unittest.TestCase):
         # one word insertion between text and 
         # input2 = [(['lorem', 'ipsum', 'nothin', 'sit'], 1.0)]
 
+    def test_textprogress_init(self):
+
+        test_paragraph = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Praesentium sit sint laborum, ab voluptatum quibusdam modi, odio minus fuga, repudiandae laudantium perspiciatis, dolorem saepe facilis quia minima aliquam distinctio voluptas.'
+
+        prog = p.TextProgress(test_paragraph)
+
+        print(prog.token_seq)
+
+        
+
 if __name__ == '__main__':
     ta = TestAlignment()
-    ta.test_alignment()
 
-    ta.test_update()
+    ta.test_alignment()
+    ta.test_textprogress_init()
+    #ta.test_update()

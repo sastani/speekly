@@ -39,7 +39,7 @@ def load_homophones(in_file='./homophones-clean.txt'):
 def process_block(block, homo_dict):
     sequence = []
     for s in block.split():
-        sequence = process_string(s, homo_dict)
+        sequence.append(process_string(s, homo_dict))
     
     return sequence
 
