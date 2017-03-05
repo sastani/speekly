@@ -1,5 +1,6 @@
 import io
 import os
+import tempfile
 
 import get_data
 from google.cloud import speech
@@ -23,23 +24,26 @@ def to_sttapi(audio):
 
         audio_content = audio_file.read()
 
-    audio_sample = speech_client.sample(
-        content=audio_content,
+    # audio_stream = io.open(audio, 'rb')
+
+    #audio_stream = io.BytesIO()
+
+    #audio_stream = tempfile.TemporaryFile()
+
+    #audio_stream.write(audio_content)
+
+    # print(audio_stream.read(), audio_content)
+
+    audio_sample = speech_client.sample(content=audio_content,
         encoding='LINEAR16',
-        sample_rate=44100)
+        sample_rate=16000)
 
-    # sample = speech_client.sample(content=audio_content,
-    #     encoding=speech.Encoding.LINEAR16, 
-    #     sample_rate=44100)
-
-    print(audio_sample)
-
-    recog_words = speech_client.speech_api.sync_recognize(audio_sample)
+    recog_words = list(audio_sample.sync_recognize())
 
     print(recog_words)
 
     for w in recog_words:
-        print(w.transcript())
+        print(w.alternatives[0].transcript)
 
 
-to_sttapi("./test_recording.raw")
+to_sttapi("./test.raw")
