@@ -1,4 +1,5 @@
 import * as ng from 'angular';
+import * as lodash from 'lodash';
 
 class HomeController implements ng.IComponentController{
 	public socket : WebSocket;
@@ -6,16 +7,20 @@ class HomeController implements ng.IComponentController{
 	public text : string;
 	public textList : any;
 	public hasStarted : boolean;
+	public progressDict : Array<any>;
+	public marker : number;
 
-	constructor(){
+	constructor(public $scope : ng.IScope){
 		// URL for the websocket connection
 		const socketUrl = 'ws://0.0.0.0:8080';
 		this.socketActive = false;
 
 		// Initalize test text
-		this.text = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Commodi debitis cupiditate blanditiis, nostrum assumenda maxime id ducimus error libero minima eos molestias quaerat quidem aut nobis tempore vel illo facere.'
+		this.text = 'I like to eat cheeseburgers and play with my friends outside. We do cool stuff man.'
 		this.hasStarted = false;
 		this.textList = [];
+		this.marker = 0;
+		this.progressDict = [];
 
 		// Init websocket
 		this.socket = new WebSocket(socketUrl);
@@ -27,7 +32,21 @@ class HomeController implements ng.IComponentController{
 
 	addEvents(socket : WebSocket){
 		/* Add respective events to the websockets */
-		//socket.addEventListener('message', this.wsMessage);
+		socket.addEventListener('message', (message : string) => {
+			const output = JSON.parse(message.data);
+			this.progressDict = output.text;
+			this.marker = output.marker;
+			this.$scope.$apply();
+		});
+	}
+
+	wsMessage(message : string){
+		const output = JSON.parse(message.data);
+
+		console.log(message, output);
+
+		this.progressDict = output.text;
+		this.marker = output.marker;
 	}
 
 	textToMap(text : string) : any{
@@ -50,12 +69,15 @@ class HomeController implements ng.IComponentController{
 	startAudioStream(){
 		/* Function to initialize streaming audio from the client to the server */
 		this.hasStarted = true;
-		this.textMap = this.textToMap(this.text);
+		this.textList = this.textToMap(this.text);
 
 		// Socket must be open
 		if (!this.socketActive){
 			return;
 		}
+
+		// Set audio object
+		this.socket.send(this.text);
 
 		// Create the stream
 		window.navigator.getUserMedia({audio: true, video: false}, (stream) => {
@@ -82,8 +104,27 @@ class HomeController implements ng.IComponentController{
 
 		}, (error) => console.error(error));
 	}
+
+	getClass(index){
+		// Get the corresponding classname from the index of a word
+		if (index == this.marker){
+			return 'marker';
+		}
+
+		if (index > this.marker){
+			return '';
+		}
+
+		const item = lodash.find(this.progressDict, {index: index});
+
+		if (!item){
+			return 'incorrect';
+		}
+
+		return 'correct';
+	}
 }
 
-HomeController.$inject = [];
+HomeController.$inject = ['$scope'];
 
 export default HomeController;

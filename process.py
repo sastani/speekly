@@ -6,6 +6,8 @@ import numpy as np
 from nltk.tokenize import word_tokenize
 import time
 
+verbose = True
+
 #######################################################################################
 # Sina's text processing functions
 
@@ -63,7 +65,7 @@ def score(word_a, word_b, is_equivalent=lambda a, b: a == b):
 
 
 # TODO numba this and traceback
-def calc_dp(text, snippet, indel=0, verbose=False):
+def calc_dp(text, snippet, indel=-1):
     """
     Calculates dynamic programming table and traceback information for snippet and text.
 
@@ -103,8 +105,8 @@ def calc_dp(text, snippet, indel=0, verbose=False):
             skip_text = D[i-1,j] + indel
             skip_snippet = D[i,j-1] + indel
 
-            if verbose:
-                print(i, j, text[i-1], snippet[j-1], match, skip_text, skip_snippet)
+            #if verbose:
+            #    print(i, j, text[i-1], snippet[j-1], match, skip_text, skip_snippet)
 
             best = max([match, skip_text, skip_snippet])
             D[i,j] = best
@@ -116,10 +118,9 @@ def calc_dp(text, snippet, indel=0, verbose=False):
             elif best == skip_snippet:
                 T[i-1,j-1] = 'l'
 
-            if verbose:
-                print(T[i-1,j-1])
-                print(D)
-                print(T)
+            #if verbose:
+            #    print(D)
+            #    print(T)
                
     return D, T, text, snippet
 
@@ -142,6 +143,11 @@ def traceback(dp_info):
     i -= 1
     j -= 1
 
+    '''
+    print(D)
+    print(T)
+    '''
+
     # need to start from all maxima on bottom and right of dp table
     max_score = max([np.max(D[:,-1]), np.max(D[-1,:])])
     #print('max_score', max_score)
@@ -155,7 +161,8 @@ def traceback(dp_info):
         if D[D.shape[0]-1,j] == max_score:
             maxima.append((D.shape[0]-1,j))
 
-    #print('indices w/ max score on edge of dp table', maxima)
+    if verbose:
+        print('indices w/ max score on edge of dp table', maxima)
 
     alignments = dict()
 
@@ -167,17 +174,23 @@ def traceback(dp_info):
         i -= 1
         j -= 1
 
+        if verbose:
+            print('')
+            print('new maxima')
+
         end_index = -1
         curr_alignment = []
 
         # TODO need to parse these alignments into scores of words prior to marker
         while i >= 0 and j >= 0:
-            #print('CURR_ALIGNMENT', curr_alignment)
-            #print(i, j)
+            if verbose:
+                print('CURR_ALIGNMENT', curr_alignment)
+                print('before ifs', i, j)
             if T[i,j] == b'm':
                 curr_alignment += [snippet[j]]
-                #print('SNIPPET TYPE IN M', type(snippet[j]))
-                #print('SNIPPET J IN M', snippet[j])
+
+                if verbose:
+                    print('SNIPPET J IN M', snippet[j])
 
                 # if we only want last index of any character called as a match
                 # we can return early
@@ -192,7 +205,9 @@ def traceback(dp_info):
 
             elif T[i,j] == b'r':
                 # does matter here. may be source of bugs.
-                #print('CHARACTER ABSENT FROM TEXT (R)')
+                if verbose:
+                    print('CHARACTER ABSENT FROM TEXT (R)')
+
                 curr_alignment += [None] #text[i]
                 i -= 1
 
@@ -200,7 +215,8 @@ def traceback(dp_info):
                 # does matter here. may be source of bugs.
                 #print('SNIPPET TYPE IN L', type(snippet[j]))
                 # TODO check still passes initial tests w/ snippet[j]
-                #print('SNIPPET J IN L', snippet[j])
+                if verbose:
+                    print('SNIPPET J IN L', snippet[j])
                 curr_alignment += [snippet[j]] #'*'
                 j -= 1
 
@@ -282,9 +298,18 @@ class TextProgress(object):
             if not alignment[i] is None:
         '''
 
+        if verbose:
+            print(alignment)
+            print(len(alignment))
+
         non_none_indices = [i for i, e in enumerate(alignment) if not e is None]
+
+        if verbose:
+            print('NON_NONE_INDICES', non_none_indices)
+
         last_non_none = max(non_none_indices)
         correct = [not a is None for a in alignment[:last_non_none + 1]]
+
         for i, a in enumerate(correct):
             self.progress[i] = a
 
@@ -299,6 +324,11 @@ class TextProgress(object):
                 snippets should be lists of strings of standardized text
                 confidences should be floats
         """
+
+        if verbose:
+            print('')
+            print('')
+            print('CALLING UPDATE WITH INTERPRETATIONS:', interpretations)
 
         # standardize everything we get 
         interpretations = [([self.standardize_string(e) for e in snippet], confidence) \
@@ -391,13 +421,14 @@ class TextProgress(object):
 
         # TODO signal new words correct or incorrect
 
-        #self.send_to_client(self.progress_dict())
+        return self.progress_dict()
 
     
     def standardize_string(self, string):
         """
         """
         return process_string(string, self.homophone_dict)
+
 
     def standardize_block(self, block):
         """
