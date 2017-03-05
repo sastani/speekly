@@ -13,41 +13,6 @@ import process as p
 
 class TestAlignment(unittest.TestCase):
 
-    #def __init__(self):
-    #    
-
-    def test_alignment_should_aligh(self):
-
-        test_paragraph = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Praesentium sit sint laborum, ab voluptatum quibusdam modi, odio minus fuga, repudiandae laudantium perspiciatis, dolorem saepe facilis quia minima aliquam distinctio voluptas.'
-
-        input1 = [(['lorem', 'ipsum', 'dolor'], 1.0)]
-
-        progress_tracker = p.TextProgress(test_paragraph)
-
-        self.assertEqual(0, progress_tracker.marker)
-
-        progress_tracker.update(input1)
-
-        self.assertEqual(3, progress_tracker.marker)
-
-        self.assertEqual({
-            'text': [{
-                index: 0,
-                correct: True
-            },
-            {
-                index: 1,
-                correct: True
-            },
-            {
-                index: 2,
-                correct: True
-            }],
-            'marker': 3
-            }, progress_tracker.progress)
-
-        # input2 = [(['lorem', 'ipsum', 'nothin', 'sit'], 1.0)]
-
     def test_alignment(self):
         text = list('abcdefgabcdefgh')
         s1 = list('abc')
@@ -102,9 +67,48 @@ class TestAlignment(unittest.TestCase):
         # shouldn't get any indices by attempting to align an empty sequence
         self.assertTrue(len(a8) == 0, a8)
 
+
     def test_update(self):
-        assert False
+
+        test_paragraph = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Praesentium sit sint laborum, ab voluptatum quibusdam modi, odio minus fuga, repudiandae laudantium perspiciatis, dolorem saepe facilis quia minima aliquam distinctio voluptas.'
+
+        # all three things should be aligned to standardized text in order
+        input1 = [(['lorem', 'ipsum', 'dolor'], 1.0)]
+
+        progress_tracker = p.TextProgress(test_paragraph)
+
+        self.assertEqual(0, progress_tracker.marker)
+
+        progress_tracker.update(input1)
+
+        self.assertEqual(3, progress_tracker.marker)
+
+        # the internal dict, not yet converted to JSON friendly format
+        self.assertEqual({'marker': 3, 'text': [(0, True), (1,True), (2,True)]}, \
+                progress_tracker.progress)
+
+        # after calling function that converts to a JSON friendly nested dict
+        self.assertEqual({
+            'text': [{
+                'index': 0,
+                'correct': True
+            },
+            {
+                'index': 1,
+                'correct': True
+            },
+            {
+                'index': 2,
+                'correct': True
+            }],
+            'marker': 3
+            }, progress_tracker.progress_dict())
+
+        # one word insertion between text and 
+        # input2 = [(['lorem', 'ipsum', 'nothin', 'sit'], 1.0)]
 
 if __name__ == '__main__':
     ta = TestAlignment()
     ta.test_alignment()
+
+    ta.test_update()
