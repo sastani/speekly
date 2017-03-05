@@ -66,9 +66,6 @@ def calc_dp(text, snippet, indel=0, verbose=False):
     # TODO i want indel to not be applied at beginning of alignment, but at end
     # not sure if this accomplishes that... the problems dp solves are usually symmetric
 
-    print('text in dp', text)
-    print('snippet in dp', snippet)
-
     if verbose:
         print(text, snippet)
 
@@ -132,8 +129,6 @@ def traceback(dp_info):
     """
 
     D, T, text, snippet = dp_info
-    print('text', text)
-    print('snippet', snippet)
 
     i, j = T.shape
     i -= 1
@@ -166,7 +161,6 @@ def traceback(dp_info):
 
         end_index = -1
         curr_alignment = []
-        print('SNIPPET', snippet)
 
         # TODO need to parse these alignments into scores of words prior to marker
         while i >= 0 and j >= 0:
