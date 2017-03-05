@@ -198,7 +198,7 @@ def traceback(dp_info):
             '''
 
         # TODO make set of indices as well
-        alignments[end_index] = alignment[::-1]
+        alignments[end_index] = curr_alignment[::-1]
 
     # TODO update tests to expect this output format
     return alignments, max_score
