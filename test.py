@@ -84,7 +84,7 @@ class TestAlignment(unittest.TestCase):
         self.assertEqual(3, progress_tracker.marker, progress_tracker.marker)
 
         # the internal dict, not yet converted to JSON friendly format
-        self.assertEqual({'marker': 3, 'text': [(0, True), (1,True), (2,True)]}, \
+        self.assertEqual({0: True, 1: True, 2: True}, \
                 progress_tracker.progress)
 
         # after calling function that converts to a JSON friendly nested dict

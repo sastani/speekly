@@ -66,9 +66,6 @@ def calc_dp(text, snippet, indel=0, verbose=False):
     # TODO i want indel to not be applied at beginning of alignment, but at end
     # not sure if this accomplishes that... the problems dp solves are usually symmetric
 
-    print('text in dp', text)
-    print('snippet in dp', snippet)
-
     if verbose:
         print(text, snippet)
 
@@ -132,8 +129,6 @@ def traceback(dp_info):
     """
 
     D, T, text, snippet = dp_info
-    print('text', text)
-    print('snippet', snippet)
 
     i, j = T.shape
     i -= 1
@@ -166,7 +161,6 @@ def traceback(dp_info):
 
         end_index = -1
         curr_alignment = []
-        print('SNIPPET', snippet)
 
         # TODO need to parse these alignments into scores of words prior to marker
         while i >= 0 and j >= 0:
@@ -237,7 +231,7 @@ class TextProgress(object):
         self.dynamic = dynamic
 
         # Taylor entered this random filter value
-        self.align_weight = 0.8
+        self.align_weight = 1
 
         # controls length of subsequence we try to align to text
         # could be a function of text length as well
@@ -264,15 +258,27 @@ class TextProgress(object):
 
 
     def update_scores(self, alignment, align_end_index):
-        # TODO off by one?
+        '''
         start_index = align_end_index - len(alignment)
 
         # '_' is magic character for a word that was in token_seq but not
         # in the snippet aligned to it
-        correct = [a != '_' for a in alignment]
+        correct = [not a is None for a in alignment]
 
         for i, c in enumerate(correct):
             self.progress[i + start_index] = c
+        '''
+        '''
+        i = len(alignment) - 1
+        while i >= 0:
+            if not alignment[i] is None:
+        '''
+
+        non_none_indices = [i for i, e in enumerate(alignment) if not e is None]
+        last_non_none = max(non_none_indices)
+        correct = [not a is None for a in alignment[:last_non_none + 1]]
+        for i, a in enumerate(correct):
+            self.progress[i] = a
 
 
     def update(self, interpretations):
@@ -350,7 +356,6 @@ class TextProgress(object):
         else:
             # TODO
             # fail?
-
             print('no alignment found.')
             return
 
