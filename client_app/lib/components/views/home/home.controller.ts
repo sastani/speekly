@@ -117,11 +117,7 @@ class HomeController implements ng.IComponentController{
 
 		const item = lodash.find(this.progressDict, {index: index});
 
-		if (!item){
-			return 'incorrect';
-		}
-
-		return 'correct';
+		return item.correct ? 'correct' : 'incorrect';
 	}
 }
 
