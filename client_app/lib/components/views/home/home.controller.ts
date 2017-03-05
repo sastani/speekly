@@ -48,6 +48,7 @@ class HomeController implements ng.IComponentController{
 
 			// Set up audio context object
 			const context = new AudioContext();
+
 			const audioInput = context.createMediaStreamSource(stream);
 
 			// Create script processor which will send data to the websocket
