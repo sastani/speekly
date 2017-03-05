@@ -16,7 +16,7 @@ def process_text(file):
         line = f.readline()
     return words
 
-def to_sttapi(audio):
+def to_sttapi(audio, smprate):
 
     speech_client = speech.Client()
 
@@ -24,13 +24,10 @@ def to_sttapi(audio):
 
         audio_content = audio_file.read()
 
-    # audio_stream = io.open(audio, 'rb')
-
-    #audio_stream = io.BytesIO()
-
-    #audio_stream = tempfile.TemporaryFile()
-
-    #audio_stream.write(audio_content)
+        audio_sample = speech_client.sample(
+        content=audio_content,
+        encoding='LINEAR16',
+        sample_rate=smprate)
 
     # print(audio_stream.read(), audio_content)
 
@@ -45,5 +42,6 @@ def to_sttapi(audio):
     for w in recog_words:
         print(w.alternatives[0].transcript)
 
-
-to_sttapi("./test.raw")
+wav = "/Users/sinaastani/Documents/speekly/charlottes/CharlottesWeb0-5s.wav"
+new_fl = get_data.convert_to_raw(wav, "wav")
+print(new_fl)
