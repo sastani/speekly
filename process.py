@@ -184,6 +184,9 @@ class TextProgress(object):
         self.min_score = 0
         self.dynamic = dynamic
 
+        # Taylor entered this random filter value
+        self.align_weight = 0.8
+
         # controls length of subsequence we try to align to text
         # could be a function of text length as well
         #self.memory = 10
@@ -204,19 +207,19 @@ class TextProgress(object):
 
     def update(self, interpretations):
         """
-        Aligns new_text to token_seq, weighted by our estimate before receiving any data.
+        Aligns interpretations to token_seq, weighted by our estimate before receiving any data.
         Can explicitly account for time passed, etc.
 
         Args:
             interprations: list of tuples ((snippet, confidence), ...)
-                snippets should be strings of standardized text
+                snippets should be lists of strings of standardized text
                 confidences should be floats
         """
 
         # TODO could use same dp on lists created from each word to calculate a similarity
         # score for the word, which we could then threshold
 
-        if dynamic:
+        if self.dynamic:
             if self.last_update == -1:
                 elapsed = 0
             else:
@@ -233,13 +236,16 @@ class TextProgress(object):
 
         max_score = 0   # 0 is min possible score if no scores < 0
         best_indices = set()
+        best_alignment = None
 
         # TODO may not work if score can go below zero. set to min possible otherwise.
-        for index_set, score in map(lambda x: x[2], map(self.align, interpretations)):
+        for alignment, index_set, score in map(self.align, interpretations):
             # not dealing with ties for now
-            if score > max_score:
+            if score >= max_score:
                 max_score = score
                 best_indices = index_set
+
+        assert not best_alignment is None, 'best_alignment was not updated'
 
         # if there are multiple tied alignments, take the one closest to the current marker
         # TODO would be better to use prediction rather than raw marker
@@ -267,7 +273,7 @@ class TextProgress(object):
         update_scores(alignment, align_end_index)
 
         # update our estimate of where the reader is in the text
-        if dynamic:
+        if self.dynamic:
             self.marker = round(self.align_weight * align_end_index + \
                     (1 - self.align_weight) * self.marker + self.estimated_rate * elapsed)
 
@@ -276,7 +282,7 @@ class TextProgress(object):
             self.marker = round(self.align_weight * align_end_index + \
                     (1 - self.align_weight) * self.marker)
 
-        if dynamic:
+        if self.dynamic:
             # update estimated reading rate
             # words per second (change in marker / sampling interval)
             # not allowing the estimate to include them reading backwards

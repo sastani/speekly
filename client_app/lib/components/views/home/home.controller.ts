@@ -3,12 +3,20 @@ import * as ng from 'angular';
 class HomeController implements ng.IComponentController{
 	public socket : WebSocket;
 	public socketActive : boolean;
+	public text : string;
+	public textMap : any;
+	public hasStarted : boolean;
 
 	constructor(){
 		// URL for the websocket connection
 		const socketUrl = 'ws://0.0.0.0:8080';
 		this.socketActive = false;
-		
+
+		// Initalize test text
+		this.text = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Commodi debitis cupiditate blanditiis, nostrum assumenda maxime id ducimus error libero minima eos molestias quaerat quidem aut nobis tempore vel illo facere.'
+		this.hasStarted = false;
+		this.textMap = []
+
 		// Init websocket
 		this.socket = new WebSocket(socketUrl);
 		this.socket.addEventListener('open', () => this.socketActive = true);
@@ -20,6 +28,12 @@ class HomeController implements ng.IComponentController{
 	addEvents(socket : WebSocket){
 		/* Add respective events to the websockets */
 		//socket.addEventListener('message', this.wsMessage);
+	}
+
+	textToMap(text : string) : any{
+		const textList = text.split(' ');
+		const textMap = textList.map(text => ({value: text, correct: false, read: false}));
+		return textMap;
 	}
 
 	convertFloat32ToInt16(buffer){
@@ -37,6 +51,8 @@ class HomeController implements ng.IComponentController{
 
 	startAudioStream(){
 		/* Function to initialize streaming audio from the client to the server */
+		this.hasStarted = true;
+		this.textMap = this.textToMap(this.text);
 
 		// Socket must be open
 		if (!this.socketActive){
@@ -52,7 +68,7 @@ class HomeController implements ng.IComponentController{
 			const audioInput = context.createMediaStreamSource(stream);
 
 			// Create script processor which will send data to the websocket
-			const bufferSize = 2048;
+			const bufferSize = 16384;
 			const recorder = context.createScriptProcessor(bufferSize, 1, 1);
 
 			recorder.onaudioprocess = (event) => {

@@ -17,8 +17,6 @@ async def handle_audio(speech_client, audio):
 
         results = list(stt_stream.sync_recognize())
 
-        print(results)
-
         for w in results:
             print(w.alternatives[0].transcript)
 
@@ -47,27 +45,15 @@ async def websocket_handler(request):
 
             # Add to the accumulator variables and the counter
             accum1 += msg.data
-            accum2 += msg.data
             i += 1
 
-            # Staggered cutoff
-            if i == 30 or i == 60:
-
+            #  cutoff
+            if i == 10:
                 audio = copy.deepcopy(accum1)
                 accum1 = b''
-                coro = handle_audio(speech_client, audio)
-                future = asyncio.ensure_future(coro)
-
-            #  Main cutoff
-            if i == 15 or i == 45:
-                audio = copy.deepcopy(accum2)
-                accum2 = b''
-                coro = handle_audio(speech_client, audio)
-                future = asyncio.ensure_future(coro)
-
-            # Reset counter
-            if i == 60:
                 i = 0
+                coro = handle_audio(speech_client, audio)
+                future = asyncio.ensure_future(coro)
 
         if msg.type == WSMsgType.TEXT:
 
