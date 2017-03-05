@@ -2,6 +2,7 @@
 import numpy as np
 from nltk.tokenize import word_tokenize
 import time
+import process_text
 
 
 # TODO pass Sina's function as is_equivalent, earlier in process

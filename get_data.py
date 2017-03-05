@@ -2,7 +2,6 @@ import os
 import subprocess as sp
 from pytube import YouTube
 from pydub import AudioSegment
-from pydub.utils import mediainfo
 
 def parse_time_str(s):
     """
@@ -57,6 +56,6 @@ def convert_to_raw(file, fmt):
     sample = AudioSegment.from_file(file, format=fmt)
     rate = sample.frame_rate
     new_file = file.split(".")[0] + ".raw"
-    new_sample = sample.export(new_file, format="raw", parameters=['-f', 's16le', '-acodec', 'pcm_s16le'])
+    sample.export(new_file, format="raw", parameters=['-f', 's16le', '-acodec', 'pcm_s16le'])
     return new_file, rate
 
