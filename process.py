@@ -320,6 +320,7 @@ class TextProgress(object):
                 best_alignment = alignment
 
         assert not best_alignment is None, 'best_alignment was not updated'
+        print('best_alignment', best_alignment)
 
         # if there are multiple tied alignments, take the one closest to the current marker
         # TODO would be better to use prediction rather than raw marker
@@ -344,7 +345,7 @@ class TextProgress(object):
             align_end_index = closest
 
         elif len(best_alignment) == 1:
-            align_end_index = best_alignment.keys().pop()
+            align_end_index = list(best_alignment.keys()).pop()
 
         # len(indices) == 0
         else:
