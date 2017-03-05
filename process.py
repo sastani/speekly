@@ -1,7 +1,7 @@
 
 import re
 import io
-
+import numtoword
 import numpy as np
 from nltk.tokenize import word_tokenize
 import time
@@ -24,10 +24,13 @@ def process_text(in_file, homo_dic):
     return words
 
 def process_string(word, homo_dic):
-    word = re.sub(r'[^a-zA-Z]', '', word)
-    word = word.lower()
-    if word in homo_dic:
-        word = homo_dic[word]
+    if word.isdigit():
+        word = numtoword(word)
+    else:
+        word = re.sub(r'[^a-zA-Z]', '', word)
+        word = word.lower()
+        if word in homo_dic:
+            word = homo_dic[word]
     return word
 
 def load_homophones(in_file='./homophones-clean.txt'):
@@ -40,8 +43,13 @@ def load_homophones(in_file='./homophones-clean.txt'):
 
 def process_block(block, homo_dict):
     sequence = []
+    block = block.replace('-', ' ')
     for s in block.split():
-        sequence.append(process_string(s, homo_dict))
+        proc_word = process_string(s, homo_dict)
+        #split in case of return of "sixty four"
+        proc_words = proc_word.split()
+        for w in proc_words:
+            sequence.append(w)
     
     return sequence
 
