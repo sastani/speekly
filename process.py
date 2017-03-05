@@ -36,6 +36,13 @@ def load_homophones(in_file='./homophones-clean.txt'):
     related_words[key_value[0]] = key_value[1]
     return related_words
 
+def process_block(block, homo_dict):
+    sequence = []
+    for s in block.split():
+        sequence = process_string(s, homo_dict)
+    
+    return sequence
+
 #######################################################################################
 # Alignment functions / backend state
 
@@ -227,7 +234,7 @@ class TextProgress(object):
         #self.memory = 10
 
         self.homophone_dict = load_homophones()
-        self.token_seq = self.standardize(text)
+        self.token_seq = self.standardize_block(text)
 
 
     def align(self, snippet):
@@ -270,7 +277,7 @@ class TextProgress(object):
         print(interpretations)
 
         # standardize everything we get 
-        interpretations = [([self.standardize(e) for e in snippet], confidence) \
+        interpretations = [([self.standardize_string(e) for e in snippet], confidence) \
                 for snippet, confidence in interpretations]
 
         print(interpretations)
@@ -299,7 +306,7 @@ class TextProgress(object):
         print(interpretations)
 
         # TODO may not work if score can go below zero. set to min possible otherwise.
-        for alignment, score in map(self.align, interpretations):
+        for alignment, score in map(lambda x: self.align(x[0]), interpretations):
 
             print(alignment, score)
             # not dealing with ties for now
@@ -325,7 +332,7 @@ class TextProgress(object):
                     assert not closest is None
                     assert not min_dist is None
 
-                    distance = abs(end_index - marker)
+                    distance = abs(end_index - self.marker)
                     if distance <= min_dist:
                         min_dist = distance
                         closest = end_index
@@ -367,10 +374,15 @@ class TextProgress(object):
 
         # TODO signal new words correct or incorrect
 
-        self.send_to_client(self.progress_dict())
+        #self.send_to_client(self.progress_dict())
 
     
-    def standardize(self, string):
+    def standardize_string(self, string):
         """
         """
         return process_string(string, self.homophone_dict)
+
+    def standardize_block(self, block):
+        """
+        """
+        return process_block(block, self.homophone_dict)
