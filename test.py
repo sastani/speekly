@@ -11,6 +11,9 @@ import process as p
 #     ],
 #     'marker': 5}
 
+test_paragraph = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Praesentium sit sint laborum, ab voluptatum quibusdam modi, odio minus fuga, repudiandae laudantium perspiciatis, dolorem saepe facilis quia minima aliquam distinctio voluptas.'
+
+
 class TestAlignment(unittest.TestCase):
 
     def test_alignment(self):
@@ -68,19 +71,14 @@ class TestAlignment(unittest.TestCase):
         self.assertTrue(len(a8) == 0, a8)
 
 
-    def test_update(self):
-
-        test_paragraph = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Praesentium sit sint laborum, ab voluptatum quibusdam modi, odio minus fuga, repudiandae laudantium perspiciatis, dolorem saepe facilis quia minima aliquam distinctio voluptas.'
-
+    def test_update_basic(self):
         # all three things should be aligned to standardized text in order
         input1 = [(['lorem', 'ipsum', 'dolor'], 1.0)]
 
         progress_tracker = p.TextProgress(test_paragraph)
-
         self.assertEqual(0, progress_tracker.marker)
 
         progress_tracker.update(input1)
-
         self.assertEqual(3, progress_tracker.marker, progress_tracker.marker)
 
         # the internal dict, not yet converted to JSON friendly format
@@ -102,10 +100,173 @@ class TestAlignment(unittest.TestCase):
                 'correct': True
             }],
             'marker': 3
-            }, progress_tracker.progress_dict())
+        }, progress_tracker.progress_dict())
 
+
+    def test_update_second(self):
+        input_seq2 = [(['ipsum'], 1.0)]
+        progress_tracker = p.TextProgress(test_paragraph)
+
+        progress_tracker.update(input_seq2)
+        self.assertEqual(2, progress_tracker.marker, progress_tracker.marker)
+        self.assertEqual({0: False, 1: True}, progress_tracker.progress)
+
+
+    def test_update_sequential(self):
+        # all three things should be aligned to standardized text in order
+        input_seq1 = [(['lorem'], 1.0)]
+        input_seq2 = [(['ipsum'], 1.0)]
+        input_seq3 = [(['dolor'], 1.0)]
+
+        progress_tracker = p.TextProgress(test_paragraph)
+
+        progress_tracker.update(input_seq1)
+        self.assertEqual(1, progress_tracker.marker, progress_tracker.marker)
+        self.assertEqual({0: True}, progress_tracker.progress)
+
+        progress_tracker.update(input_seq2)
+        self.assertEqual(2, progress_tracker.marker, progress_tracker.marker)
+        self.assertEqual({0: True, 1: True}, progress_tracker.progress)
+
+        progress_tracker.update(input_seq3)
+        self.assertEqual(3, progress_tracker.marker, progress_tracker.marker)
+        self.assertEqual({0: True, 1: True, 2: True}, progress_tracker.progress)
+
+        # after calling function that converts to a JSON friendly nested dict
+        self.assertEqual({
+            'text': [{
+                'index': 0,
+                'correct': True
+            },
+            {
+                'index': 1,
+                'correct': True
+            },
+            {
+                'index': 2,
+                'correct': True
+            }],
+            'marker': 3
+        }, progress_tracker.progress_dict())
+
+
+    def test_update_sequential_duplication(self):
+        # all three things should be aligned to standardized text in order
+        input_seq1 = [(['lorem'], 1.0)]
+        input_seq2 = [(['ipsum'], 1.0)]
+        input_seq3 = [(['ipsum'], 1.0)]
+        input_seq4 = [(['dolor'], 1.0)]
+
+        progress_tracker = p.TextProgress(test_paragraph)
+
+        progress_tracker.update(input_seq1)
+        self.assertEqual(1, progress_tracker.marker, progress_tracker.marker)
+        self.assertEqual({0: True}, progress_tracker.progress)
+
+        progress_tracker.update(input_seq2)
+        self.assertEqual(2, progress_tracker.marker, progress_tracker.marker)
+        self.assertEqual({0: True, 1: True}, progress_tracker.progress)
+
+        progress_tracker.update(input_seq3)
+        self.assertEqual(3, progress_tracker.marker, progress_tracker.marker)
+        self.assertEqual({0: True, 1: True}, progress_tracker.progress)
+
+        progress_tracker.update(input_seq4)
+        self.assertEqual(4, progress_tracker.marker, progress_tracker.marker)
+        self.assertEqual({0: True, 1: True, 2: True}, progress_tracker.progress)
+
+        # after calling function that converts to a JSON friendly nested dict
+        self.assertEqual({
+            'text': [{
+                'index': 0,
+                'correct': True
+            },
+            {
+                'index': 1,
+                'correct': True
+            },
+            {
+                'index': 2,
+                'correct': True
+            }],
+            'marker': 3
+        }, progress_tracker.progress_dict())
+
+
+    def test_update_sequential_insertion(self):
+        # all three things should be aligned to standardized text in order
+        input_seq1 = [(['lorem'], 1.0)]
+        input_seq2 = [(['ipsum'], 1.0)]
+        input_seq3 = [(['what is missing here?'], 1.0)]
+        input_seq4 = [(['dolor'], 1.0)]
+
+        progress_tracker = p.TextProgress(test_paragraph)
+
+        progress_tracker.update(input_seq1)
+        self.assertEqual(1, progress_tracker.marker, progress_tracker.marker)
+        self.assertEqual({0: True}, progress_tracker.progress)
+
+        progress_tracker.update(input_seq2)
+        self.assertEqual(2, progress_tracker.marker, progress_tracker.marker)
+        self.assertEqual({0: True, 1: True}, progress_tracker.progress)
+
+        progress_tracker.update(input_seq3)
+        self.assertEqual(3, progress_tracker.marker, progress_tracker.marker)
+        self.assertEqual({0: True, 1: True}, progress_tracker.progress)
+
+        progress_tracker.update(input_seq4)
+        self.assertEqual(4, progress_tracker.marker, progress_tracker.marker)
+        self.assertEqual({0: True, 1: True, 2: True}, progress_tracker.progress)
+
+        # after calling function that converts to a JSON friendly nested dict
+        self.assertEqual({
+            'text': [{
+                'index': 0,
+                'correct': True
+            },
+            {
+                'index': 1,
+                'correct': True
+            },
+            {
+                'index': 2,
+                'correct': True
+            }],
+            'marker': 3
+        }, progress_tracker.progress_dict())
+
+
+    def test_update_overlapping(self):
         # one word insertion between text and 
-        # input2 = [(['lorem', 'ipsum', 'nothin', 'sit'], 1.0)]
+        input = [(['lorem', 'ipsum', 'nothin', 'sit'], 1.0)]
+        
+        progress_tracker = p.TextProgress(test_paragraph)
+        self.assertEqual(0, progress_tracker.marker)
+
+        progress_tracker.update(input1)
+        self.assertEqual(3, progress_tracker.marker, progress_tracker.marker)
+
+        # the internal dict, not yet converted to JSON friendly format
+        self.assertEqual({0: True, 1: True, 2: True}, \
+                progress_tracker.progress)
+
+        # after calling function that converts to a JSON friendly nested dict
+        self.assertEqual({
+            'text': [{
+                'index': 0,
+                'correct': True
+            },
+            {
+                'index': 1,
+                'correct': True
+            },
+            {
+                'index': 2,
+                'correct': True
+            }],
+            'marker': 3
+        }, progress_tracker.progress_dict())
+
 
     '''
     def test_textprogress_init(self):
@@ -118,10 +279,13 @@ class TestAlignment(unittest.TestCase):
 
     '''
         
-
 if __name__ == '__main__':
     ta = TestAlignment()
 
-    #ta.test_alignment()
+    ta.test_alignment()
     #ta.test_textprogress_init()
-    ta.test_update()
+    ta.test_update_basic()
+    ta.test_update_sequential()
+    ta.test_update_overlapping()
+    ta.test_update_sequential_duplication()
+    ta.test_update_sequential_insertion()
