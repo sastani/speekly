@@ -170,11 +170,12 @@ def traceback(dp_info):
 
         # TODO need to parse these alignments into scores of words prior to marker
         while i >= 0 and j >= 0:
-            print('CURR_ALIGNMENT', curr_alignment)
+            #print('CURR_ALIGNMENT', curr_alignment)
             #print(i, j)
             if T[i,j] == b'm':
-                curr_alignment += snippet[j]
-                print('SNIPPET J IN M', snippet[j])
+                curr_alignment += [snippet[j]]
+                #print('SNIPPET TYPE IN M', type(snippet[j]))
+                #print('SNIPPET J IN M', snippet[j])
 
                 # if we only want last index of any character called as a match
                 # we can return early
@@ -189,15 +190,16 @@ def traceback(dp_info):
 
             elif T[i,j] == b'r':
                 # does matter here. may be source of bugs.
-                print('CHARACTER ABSENT FROM TEXT (R)')
-                curr_alignment += ['_'] #text[i]
+                #print('CHARACTER ABSENT FROM TEXT (R)')
+                curr_alignment += [None] #text[i]
                 i -= 1
 
             elif T[i,j] == b'l':
                 # does matter here. may be source of bugs.
+                #print('SNIPPET TYPE IN L', type(snippet[j]))
                 # TODO check still passes initial tests w/ snippet[j]
-                print('SNIPPET J IN L', snippet[j])
-                curr_alignment += snippet[j] #'*'
+                #print('SNIPPET J IN L', snippet[j])
+                curr_alignment += [snippet[j]] #'*'
                 j -= 1
 
             else:
