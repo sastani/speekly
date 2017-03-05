@@ -4,17 +4,27 @@ import tempfile
 
 import get_data
 from google.cloud import speech
+import re
 
-def process_text(file):
+def process_text(file, homo_dic):
     f = open(file, "r")
     words = []
     line = f.readline()
     while line:
         curr_words = line.split()
         for word in curr_words:
+            word = process_string(word, homo_dic)
             words.append(word)
         line = f.readline()
     return words
+
+def process_string(str, homo_dic):
+    str = re.sub(r'[^a-zA-Z]', '', str)
+    str = str.lower()
+    if str in homo_dic:
+        str = homo_dic[str]
+    return str
+
 
 def to_sttapi(audio, smprate):
 
@@ -28,12 +38,6 @@ def to_sttapi(audio, smprate):
         content=audio_content,
         encoding='LINEAR16',
         sample_rate=smprate)
-
-    # print(audio_stream.read(), audio_content)
-
-    audio_sample = speech_client.sample(content=audio_content,
-        encoding='LINEAR16',
-        sample_rate=16000)
 
     recog_words = list(audio_sample.sync_recognize())
 
@@ -61,6 +65,6 @@ def clean_homophones(file):
         fout.write("\n")
         line = f.readline()
 
-wav = "/Users/sinaastani/Documents/speekly/charlottes/CharlottesWeb0-5s.wav"
-new_fl = get_data.convert_to_raw(wav, "wav")
-print(new_fl)
+#wav = "/Users/sinaastani/Documents/speekly/charlottes/CharlottesWeb0-5s.wav"
+new_fl = get_data.convert_to_raw("./test_recording.m4a", "m4a")
+to_sttapi(new_fl[0], new_fl[1])

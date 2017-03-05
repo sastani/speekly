@@ -2,6 +2,7 @@
 import numpy as np
 from nltk.tokenize import word_tokenize
 import time
+import process_text
 
 
 def score(word_a, word_b):

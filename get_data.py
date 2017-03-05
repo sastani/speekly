@@ -2,7 +2,6 @@ import os
 import subprocess as sp
 from pytube import YouTube
 from pydub import AudioSegment
-from pydub.utils import mediainfo
 
 def parse_time_str(s):
     """
