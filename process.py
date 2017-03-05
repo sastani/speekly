@@ -207,12 +207,12 @@ class TextProgress(object):
 
     def update(self, interpretations):
         """
-        Aligns new_text to token_seq, weighted by our estimate before receiving any data.
+        Aligns interpretations to token_seq, weighted by our estimate before receiving any data.
         Can explicitly account for time passed, etc.
 
         Args:
             interprations: list of tuples ((snippet, confidence), ...)
-                snippets should be strings of standardized text
+                snippets should be lists of strings of standardized text
                 confidences should be floats
         """
 
@@ -236,13 +236,16 @@ class TextProgress(object):
 
         max_score = 0   # 0 is min possible score if no scores < 0
         best_indices = set()
+        best_alignment = None
 
         # TODO may not work if score can go below zero. set to min possible otherwise.
-        for index_set, score in map(lambda x: x[2], map(self.align, interpretations)):
+        for alignment, index_set, score in map(self.align, interpretations):
             # not dealing with ties for now
-            if score > max_score:
+            if score >= max_score:
                 max_score = score
                 best_indices = index_set
+
+        assert not best_alignment is None, 'best_alignment was not updated'
 
         # if there are multiple tied alignments, take the one closest to the current marker
         # TODO would be better to use prediction rather than raw marker
