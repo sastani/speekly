@@ -1,4 +1,4 @@
-def numToWord(number):
+def numtoword(number):
     word = []
     if number < 0 or number > 999999:
         print (word)
@@ -26,4 +26,3 @@ def numToWord(number):
             word.pop(i)
     return ' '.join(word[::-1])
 
-print(numToWord(64))
