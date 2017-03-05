@@ -1,7 +1,14 @@
 <div class='row'>
 	<div class='col-xs-12'>
-		<div>
+		<h1>Speekly</h1>
+		<div ng-if='!$ctrl.hasStarted'>
 			<button class='btn btn-default' ng-click='$ctrl.startAudioStream()'>Start</button>
+		</div>
+		<div ng-if='!$ctrl.hasStarted'>
+			<p>{{$ctrl.text}}</p>
+		</div>
+		<div ng-if='$ctrl.hasStarted'>
+			<p><span ng-repeat='map in $ctrl.textMap'>{{map.value}}&nbsp;</span></p>
 		</div>
 	</div>
 </div>

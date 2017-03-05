@@ -182,6 +182,9 @@ class TextProgress(object):
         self.min_score = 0
         self.dynamic = dynamic
 
+        # Taylor entered this random filter value
+        self.align_weight = 0.8
+
         # controls length of subsequence we try to align to text
         # could be a function of text length as well
         #self.memory = 10
@@ -208,7 +211,7 @@ class TextProgress(object):
         # TODO could use same dp on lists created from each word to calculate a similarity
         # score for the word, which we could then threshold
 
-        if dynamic:
+        if self.dynamic:
             if self.last_update == -1:
                 elapsed = 0
             else:
@@ -249,7 +252,7 @@ class TextProgress(object):
                     closest = curr
 
         # update our estimate of where the reader is in the text
-        if dynamic:
+        if self.dynamic:
             self.marker = round(self.align_weight * self.align(new_text) + \
                     (1 - self.align_weight) * self.marker + self.estimated_rate * elapsed)
 
@@ -258,7 +261,7 @@ class TextProgress(object):
             self.marker = round(self.align_weight * self.align(new_text) + \
                     (1 - self.align_weight) * self.marker)
 
-        if dynamic:
+        if self.dynamic:
             # update estimated reading rate
             # words per second (change in marker / sampling interval)
             # not allowing the estimate to include them reading backwards
