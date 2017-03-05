@@ -122,8 +122,8 @@ def traceback(dp_info):
     """
 
     D, T, text, snippet = dp_info
-    #print(text)
-    #print(snippet)
+    print('text', text)
+    print('snippet', snippet)
 
     i, j = T.shape
     i -= 1
@@ -197,10 +197,9 @@ def traceback(dp_info):
                 break
             '''
 
-        # TODO make set of indices as well
-        alignments[end_index] = curr_alignment[::-1]
+        if end_index != -1:
+            alignments[end_index] = curr_alignment[::-1]
 
-    # TODO update tests to expect this output format
     return alignments, max_score
 
 
@@ -268,8 +267,13 @@ class TextProgress(object):
                 confidences should be floats
         """
 
+        print(interpretations)
+
         # standardize everything we get 
-        interpretations = [[self.standardize(e) for e in snippet] for snippet in interpretations]
+        interpretations = [([self.standardize(e) for e in snippet], confidence) \
+                for snippet, confidence in interpretations]
+
+        print(interpretations)
 
         # TODO could use same dp on lists created from each word to calculate a similarity
         # score for the word, which we could then threshold
@@ -292,8 +296,12 @@ class TextProgress(object):
         max_score = 0   # 0 is min possible score if no scores < 0
         best_alignment = None
 
+        print(interpretations)
+
         # TODO may not work if score can go below zero. set to min possible otherwise.
         for alignment, score in map(self.align, interpretations):
+
+            print(alignment, score)
             # not dealing with ties for now
             if score >= max_score:
                 max_score = score
@@ -362,7 +370,7 @@ class TextProgress(object):
         self.send_to_client(self.progress_dict())
 
     
-    def standardize(string):
+    def standardize(self, string):
         """
         """
-        process_string(string, self.homophone_dict)
+        return process_string(string, self.homophone_dict)
