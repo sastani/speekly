@@ -2,10 +2,51 @@
 import unittest
 import process as p
 
+
+# exptected_result = {"text": [
+#         {
+#             value: "The",
+#             correct: False
+#         }
+#     ],
+#     'marker': 5}
+
 class TestAlignment(unittest.TestCase):
 
     #def __init__(self):
     #    
+
+    def test_alignment_should_aligh(self):
+
+        test_paragraph = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Praesentium sit sint laborum, ab voluptatum quibusdam modi, odio minus fuga, repudiandae laudantium perspiciatis, dolorem saepe facilis quia minima aliquam distinctio voluptas.'
+
+        input1 = [(['lorem', 'ipsum', 'dolor'], 1.0)]
+
+        progress_tracker = p.TextProgress(test_paragraph)
+
+        self.assertEqual(0, progress_tracker.marker)
+
+        progress_tracker.update(input1)
+
+        self.assertEqual(3, progress_tracker.marker)
+
+        self.assertEqual({
+            'text': [{
+                index: 0,
+                correct: True
+            },
+            {
+                index: 1,
+                correct: True
+            },
+            {
+                index: 2,
+                correct: True
+            }],
+            'marker': 3
+            }, progress_tracker.progress)
+
+        # input2 = [(['lorem', 'ipsum', 'nothin', 'sit'], 1.0)]
 
     def test_alignment(self):
         text = list('abcdefgabcdefgh')
