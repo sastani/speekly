@@ -133,6 +133,9 @@ def request_stream(data_stream, rate, interim_results=True):
     """
     # The initial request must contain metadata about the stream, so the
     # server knows how to interpret it.
+
+    print(type(data_stream))
+
     recognition_config = cloud_speech_pb2.RecognitionConfig(
         # There are a bunch of config options you can specify. See
         # https://goo.gl/KPZn97 for the full list.
