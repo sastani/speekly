@@ -251,7 +251,6 @@ class TextProgress(object):
         """
         Returns a list of end indices of alignments and the best score.
         """
-        print('SNIPPET', snippet)
         
         return traceback(calc_dp(self.token_seq, snippet))
 
@@ -287,13 +286,9 @@ class TextProgress(object):
                 confidences should be floats
         """
 
-        print(interpretations)
-
         # standardize everything we get 
         interpretations = [([self.standardize_string(e) for e in snippet], confidence) \
                 for snippet, confidence in interpretations]
-
-        print(interpretations)
 
         # TODO could use same dp on lists created from each word to calculate a similarity
         # score for the word, which we could then threshold
@@ -316,19 +311,15 @@ class TextProgress(object):
         max_score = 0   # 0 is min possible score if no scores < 0
         best_alignment = None
 
-        print('INTERPRETATIONS', interpretations)
-
         # TODO may not work if score can go below zero. set to min possible otherwise.
         for alignment, score in map(lambda x: self.align(x[0]), interpretations):
 
-            print(alignment, score)
             # not dealing with ties for now
             if score >= max_score:
                 max_score = score
                 best_alignment = alignment
 
         assert not best_alignment is None, 'best_alignment was not updated'
-        print('BEST_ALIGNMENT', best_alignment)
 
         # if there are multiple tied alignments, take the one closest to the current marker
         # TODO would be better to use prediction rather than raw marker
@@ -364,17 +355,16 @@ class TextProgress(object):
             return
 
         alignment = best_alignment[align_end_index]
-        print('ALIGNMENT', alignment)
         self.update_scores(alignment, align_end_index)
 
         # update our estimate of where the reader is in the text
         if self.dynamic:
-            self.marker = round(self.align_weight * align_end_index + \
+            self.marker = round(self.align_weight * (align_end_index + 1) + \
                     (1 - self.align_weight) * self.marker + self.estimated_rate * elapsed)
 
         # TODO will probably want align_weight cloes to 1 for this case
         else:
-            self.marker = round(self.align_weight * align_end_index + \
+            self.marker = round(self.align_weight * (align_end_index + 1) + \
                     (1 - self.align_weight) * self.marker)
 
         if self.dynamic:
