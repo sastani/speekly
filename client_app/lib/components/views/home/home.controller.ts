@@ -9,6 +9,8 @@ class HomeController implements ng.IComponentController{
 	public hasStarted : boolean;
 	public progressDict : Array<any>;
 	public marker : number;
+	public language : string;
+	public languageOptions : Array<any>;
 
 	constructor(public $scope : ng.IScope){
 		// URL for the websocket connection
@@ -21,6 +23,24 @@ class HomeController implements ng.IComponentController{
 		this.textList = [];
 		this.marker = 0;
 		this.progressDict = [];
+		this.languageOptions = [{
+			name: 'English',
+			value: 'en-US'
+		},{
+			name: 'Español',
+			value: 'es-MX'
+		},{
+			name: 'Français',
+			value: 'fr-FR'
+		},{
+			name: 'Italiano',
+			value: 'it-IT'
+		},{
+			name: '普通话 (中国大陆)',
+			value: 'cmn-Hans-CN'
+		}]
+
+		this.language = this.languageOptions[0].value;
 
 		// Init websocket
 		this.socket = new WebSocket(socketUrl);
@@ -77,7 +97,7 @@ class HomeController implements ng.IComponentController{
 		}
 
 		// Set audio object
-		this.socket.send(this.text);
+		this.socket.send(JSON.stringify({text: this.text, language: this.language}));
 
 		// Create the stream
 		window.navigator.getUserMedia({audio: true, video: false}, (stream) => {

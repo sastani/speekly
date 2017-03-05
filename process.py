@@ -24,13 +24,19 @@ def process_text(in_file, homo_dic):
     return words
 
 def process_string(word, homo_dic):
-    if word.isdigit():
-        word = numtoword(word)
-    else:
-        word = re.sub(r'[^a-zA-Z]', '', word)
-        word = word.lower()
-        if word in homo_dic:
-            word = homo_dic[word]
+    # if word.isdigit():
+    #     word = numtoword.numtoword(word)
+    # else:
+    #     word = re.sub(r'[^a-zA-Z]', '', word)
+    #     word = word.lower()
+    #     if word in homo_dic:
+    #         word = homo_dic[word]
+
+    word = re.sub(r'[^a-zA-Z]', '', word)
+    word = word.lower()
+    if word in homo_dic:
+        word = homo_dic[word]
+        
     return word
 
 def load_homophones(in_file='./homophones-clean.txt'):

@@ -33,7 +33,7 @@ def make_channel(host, port):
     return google.auth.transport.grpc.secure_authorized_channel(
         credentials, http_request, target)
 
-async def handle_audio(speech_client, audio, progress_manager, ws):
+async def handle_audio(speech_client, audio, progress_manager, ws, language):
 
     try:
         # The method and parameters can be inferred from the proto from which the
@@ -47,7 +47,7 @@ async def handle_audio(speech_client, audio, progress_manager, ws):
                 sample_rate=44100,  # the rate in hertz
                 # See https://g.co/cloud/speech/docs/languages for a list of
                 # supported languages.
-                #language_code=language_code,  # a BCP-47 language tag
+                language_code=language,  # a BCP-47 language tag
             ),
             audio=cloud_speech_pb2.RecognitionAudio(
                 content=audio,
@@ -94,6 +94,8 @@ async def websocket_handler(request):
 
     progress_manager = None
 
+    language = 'en-US'
+
     async for msg in ws:
 
         if msg.type == WSMsgType.BINARY:
@@ -110,7 +112,7 @@ async def websocket_handler(request):
                 audio = copy.deepcopy(accum1)
                 accum1 = b''
                 i = 0
-                coro = handle_audio(service, audio, progress_manager, ws)
+                coro = handle_audio(service, audio, progress_manager, ws, language)
                 future = asyncio.ensure_future(coro)
 
         if msg.type == WSMsgType.TEXT:
@@ -118,7 +120,13 @@ async def websocket_handler(request):
             if msg.data == 'close':
                 await ws.close()
 
-            progress_manager = process.TextProgress(msg.data)
+            print(json.loads(msg.data))
+
+            data = json.loads(msg.data)
+
+            language = data['language']
+
+            progress_manager = process.TextProgress(data['text'])
 
         elif msg.type == WSMsgType.ERROR:
             print('ws connection closed with exception %s' %
