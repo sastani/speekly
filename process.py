@@ -6,7 +6,7 @@ import numpy as np
 from nltk.tokenize import word_tokenize
 import time
 
-verbose = True
+verbose = False
 
 #######################################################################################
 # Sina's text processing functions
@@ -53,11 +53,12 @@ def score(word_a, word_b, is_equivalent=lambda a, b: a == b):
     if is_equivalent(word_a,  word_b):
         return 1
     else:
-        return 0
+        # TODO any cases where i am assuming nonnegative cost / util
+        return -1
 
 
 # TODO numba this and traceback
-def calc_dp(text, snippet, indel=-1):
+def calc_dp(text, snippet, indel=0):
     """
     Calculates dynamic programming table and traceback information for snippet and text.
 
@@ -67,9 +68,6 @@ def calc_dp(text, snippet, indel=-1):
     """
     # TODO i want indel to not be applied at beginning of alignment, but at end
     # not sure if this accomplishes that... the problems dp solves are usually symmetric
-
-    if verbose:
-        print(text, snippet)
 
     assert len(text) >= len(snippet), 'length of text should be longer than chunks ' + \
             'returned from API'
@@ -97,8 +95,8 @@ def calc_dp(text, snippet, indel=-1):
             skip_text = D[i-1,j] + indel
             skip_snippet = D[i,j-1] + indel
 
-            #if verbose:
-            #    print(i, j, text[i-1], snippet[j-1], match, skip_text, skip_snippet)
+            if verbose:
+                print(i, j, text[i-1], snippet[j-1], match, skip_text, skip_snippet)
 
             best = max([match, skip_text, skip_snippet])
             D[i,j] = best
@@ -135,11 +133,6 @@ def traceback(dp_info):
     i -= 1
     j -= 1
 
-    '''
-    print(D)
-    print(T)
-    '''
-
     # need to start from all maxima on bottom and right of dp table
     max_score = max([np.max(D[:,-1]), np.max(D[-1,:])])
     #print('max_score', max_score)
@@ -158,9 +151,6 @@ def traceback(dp_info):
 
     alignments = dict()
 
-    #print(D)
-    #print(T)
-
     for m in maxima:
         i, j = m
         i -= 1
@@ -170,6 +160,8 @@ def traceback(dp_info):
             print('')
             print('new maxima')
 
+        #print('maxima', m)
+
         end_index = -1
         curr_alignment = []
 
@@ -177,12 +169,14 @@ def traceback(dp_info):
         while i >= 0 and j >= 0:
             if verbose:
                 print('CURR_ALIGNMENT', curr_alignment)
-                print('before ifs', i, j)
+            #print('before ifs', i, j)
+
             if T[i,j] == b'm':
                 curr_alignment += [snippet[j]]
 
                 if verbose:
                     print('SNIPPET J IN M', snippet[j])
+                    print('text i', text[i])
 
                 # if we only want last index of any character called as a match
                 # we can return early
@@ -195,6 +189,7 @@ def traceback(dp_info):
                 i -= 1
                 j -= 1
 
+            # TODO revisit indexing. sanity check. switch i & j decrement?
             elif T[i,j] == b'r':
                 # does matter here. may be source of bugs.
                 if verbose:
@@ -226,6 +221,13 @@ def traceback(dp_info):
 
         if end_index != -1:
             alignments[end_index] = curr_alignment[::-1]
+
+    '''
+    print(T)
+    print(D)
+    print(alignments)
+    print(max_score)
+    '''
 
     return alignments, max_score
 
@@ -273,7 +275,7 @@ class TextProgress(object):
         return d
 
 
-    def update_scores(self, alignment, align_end_index):
+    def update_scores(self, alignment, length_diff):
         '''
         start_index = align_end_index - len(alignment)
 
@@ -290,6 +292,17 @@ class TextProgress(object):
             if not alignment[i] is None:
         '''
 
+        print('self.progress', self.progress)
+        print('input alignment', alignment)
+        print('lendiff', length_diff)
+
+        # words we have skipped that are not already scored should be False
+        # words once marked false but now true will probably (?) be in alignment
+        # anyway
+        for i in range(length_diff):
+            if not i in self.progress:
+                self.progress[i] = False
+
         if verbose:
             print(alignment)
             print(len(alignment))
@@ -303,7 +316,7 @@ class TextProgress(object):
         correct = [not a is None for a in alignment[:last_non_none + 1]]
 
         for i, a in enumerate(correct):
-            self.progress[i] = a
+            self.progress[i + length_diff] = a
 
 
     def update(self, interpretations):
@@ -353,6 +366,7 @@ class TextProgress(object):
             # not dealing with ties for now
             if score >= max_score:
                 max_score = score
+                print(alignment)
                 best_alignment = alignment
 
         assert not best_alignment is None, 'best_alignment was not updated'
@@ -390,7 +404,12 @@ class TextProgress(object):
             return
 
         alignment = best_alignment[align_end_index]
-        self.update_scores(alignment, align_end_index)
+        '''
+        print('alignment right before update_score', alignment)
+        print(len(alignment))
+        '''
+        len_diff = len(self.token_seq) - len(alignment)
+        self.update_scores(alignment, len_diff)
 
         # update our estimate of where the reader is in the text
         if self.dynamic:

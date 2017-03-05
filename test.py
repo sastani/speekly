@@ -103,6 +103,19 @@ class TestAlignment(unittest.TestCase):
         }, progress_tracker.progress_dict())
 
 
+    def test_align_simple(self):
+        text = list('ab')
+        s = ['b']
+        align, score = p.traceback(p.calc_dp(text, s))
+
+    def test_update_first(self):
+        input_seq1 = [(['lorem'], 1.0)]
+        progress_tracker = p.TextProgress(test_paragraph)
+
+        progress_tracker.update(input_seq1)
+        self.assertEqual(1, progress_tracker.marker, progress_tracker.marker)
+        self.assertEqual({0: True}, progress_tracker.progress)
+
     def test_update_second(self):
         input_seq2 = [(['ipsum'], 1.0)]
         progress_tracker = p.TextProgress(test_paragraph)
@@ -238,16 +251,18 @@ class TestAlignment(unittest.TestCase):
 
     def test_update_overlapping(self):
         # one word insertion between text and 
-        input = [(['lorem', 'ipsum', 'nothin', 'sit'], 1.0)]
+        input1 = [(['lorem', 'ipsum', 'nothin', 'sit'], 1.0)]
         
         progress_tracker = p.TextProgress(test_paragraph)
         self.assertEqual(0, progress_tracker.marker)
 
         progress_tracker.update(input1)
-        self.assertEqual(3, progress_tracker.marker, progress_tracker.marker)
+        # was 3, but 4 makes sense
+        # mostly empirically, not rigorously checked given cost function, but seems right
+        self.assertEqual(4, progress_tracker.marker, progress_tracker.marker)
 
         # the internal dict, not yet converted to JSON friendly format
-        self.assertEqual({0: True, 1: True, 2: True}, \
+        self.assertEqual({0: True, 1: True, 2: False, 3: True}, \
                 progress_tracker.progress)
 
         # after calling function that converts to a JSON friendly nested dict
@@ -262,9 +277,13 @@ class TestAlignment(unittest.TestCase):
             },
             {
                 'index': 2,
+                'correct': False
+            },
+            {
+                'index': 3,
                 'correct': True
             }],
-            'marker': 3
+            'marker': 4
         }, progress_tracker.progress_dict())
 
 
@@ -283,8 +302,11 @@ if __name__ == '__main__':
     ta = TestAlignment()
 
     ta.test_alignment()
+    ta.test_align_simple()
     #ta.test_textprogress_init()
     ta.test_update_basic()
+    ta.test_update_first()
+    ta.test_update_second()
     ta.test_update_sequential()
     ta.test_update_overlapping()
     ta.test_update_sequential_duplication()
